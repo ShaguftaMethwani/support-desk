@@ -1,0 +1,44 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: support
+          POSTGRES_PASSWORD: support
+          POSTGRES_DB: support_desk
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U support -d support_desk"
+          --health-interval 3s --health-timeout 3s --health-retries 20
+    env:
+      DATABASE_URL: postgresql+asyncpg://support:support@localhost:5432/support_desk
+      REQUIRE_DB: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+          enable-cache: true
+      - run: uv sync --frozen
+      - name: Lint
+        run: uv run ruff check . && uv run ruff format --check .
+      - name: Type check
+        run: uv run mypy
+      - name: Migrate
+        run: uv run alembic upgrade head
+      - name: Models match migrations
+        run: uv run alembic check
+      - name: Tests (no Groq calls)
+        run: uv run pytest -m "not llm" -q

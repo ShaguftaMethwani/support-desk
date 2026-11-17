@@ -1,0 +1,322 @@
+Milestone 1 : RAG-based Mutual Fund FAQ Chatbot: Facts-Only MF Assistant is a RAG-based chatbot that answers factual questions about mutual fund schemes using verified sources from AMC, SEBI, and AMFI websites. It provides concise, citation-backed responses while strictly avoiding any investment advice.
+
+Pick ONE product from the following list:
+
+INDMoney
+Groww 
+PowerUp Money
+Wealth Monitor
+Kuvera.
+All Milestones will use the same product you choose here.
+
+Mutual Fund FAQs (Facts-Only Q&A)
+Milestone brief
+Build a small FAQ assistant that answers facts about mutual fund schemes—e.g., expense ratio, exit load, minimum SIP, lock-in (ELSS), riskometer, benchmark, and how to download statements—using only official public pages. Every answer must include one source link. No advice.
+
+Who this helps
+Retail users comparing schemes; support/content teams answering repetitive MF questions.
+
+What you must build
+Scope your corpus: Pick one AMC and 3–5 schemes under it (e.g., one large-cap, one flexi-cap, one ELSS).
+
+Collect 15–25 public pages from AMC/SEBI/AMFI (factsheets, KIM/SID, scheme FAQs, fee/charges pages, riskometer/benchmark notes, statement/tax-doc guides).
+
+FAQ assistant (working prototype):
+
+Answers factual queries only (e.g., “Expense ratio of ?”, “ELSS lock-in?”, “Minimum SIP?”, “Exit load?”, “Riskometer/benchmark?”, “How to download capital-gains statement?”).
+
+Shows one clear citation link in every answer.
+
+Refuses opinionated/portfolio questions (e.g., “Should I buy/sell?”) with a polite, facts-only message and a relevant educational link.
+
+Tiny UI: welcome line + 3 example questions and a note: “Facts-only. No investment advice.”
+
+Key constraints
+Public sources only. No screenshots of the app back-end; no third-party blogs as sources.
+
+No PII. Do not accept/store PAN, Aadhaar, account numbers, OTPs, emails, or phone numbers.
+
+No performance claims. Don’t compute/compare returns; link to the official factsheet if asked.
+
+Clarity & transparency. Keep answers ≤3 sentences; add “Last updated from sources: ”.
+
+What to submit (deliverables)
+Working prototype link (app/notebook) or a ≤3-min demo video if hosting isn’t possible.
+
+Source list (CSV/MD) of the 15–25 URLs you used.
+
+README with setup steps, scope (AMC + schemes), and known limits.
+
+Sample Q&A file (5–10 queries with the assistant’s answers + links).
+
+Disclaimer snippet used in your UI (facts-only, no advice).
+
+Skills being tested
+W1 — Thinking Like a Model: identify the exact fact asked; decide answer vs. refuse.
+
+W2 — LLMs & Prompting: instruction style, concise phrasing, polite safe-refusals, citation wording.
+
+W3 — RAGs (only): small-corpus retrieval with accurate citations from AMC/SEBI/AMFI pages.
+
+Appendix
+Abbreviation	Full Form	Description / Context
+AMC	Asset Management Company	A financial institution that manages mutual fund schemes and makes investment decisions on behalf of investors.
+MF	Mutual Fund	A pool of money collected from investors to invest in securities like stocks, bonds, and other assets.
+ELSS	Equity Linked Savings Scheme	A type of mutual fund offering tax benefits under Section 80C of the Income Tax Act, with a mandatory 3-year lock-in period.
+SIP	Systematic Investment Plan	An investment method where an investor invests a fixed amount in a mutual fund scheme at regular intervals.
+SEBI	Securities and Exchange Board of India	The regulatory authority that oversees securities markets and mutual funds in India.
+AMFI	Association of Mutual Funds in India	The industry standards body for mutual funds in India; provides investor education and scheme data.
+FAQ	Frequently Asked Questions	A collection of commonly asked questions with factual, concise answers.
+Q&A	Question and Answer	The format in which the assistant provides factual responses to user queries.
+KIM	Key Information Memorandum	A summary document containing essential details about a mutual fund scheme, such as objectives, risks, and charges.
+SID	Scheme Information Document	A detailed document that provides comprehensive information about a specific mutual fund scheme.
+RAG	Retrieval-Augmented Generation	A technique that combines information retrieval and generative AI to provide grounded, citation-based responses.
+PII	Personally Identifiable Information	Data that can identify an individual (e.g., PAN, Aadhaar, phone number, or email).
+PAN	Permanent Account Number	A unique 10-character alphanumeric identifier issued by the Indian Income Tax Department.
+OTP	One-Time Password	A short-lived numeric code used for user authentication.
+UI	User Interface	The visual part of an application that users interact with.
+CSV	Comma-Separated Values	A simple text file format used for storing tabular data, such as a list of URLs.
+MD	Markdown	A lightweight markup language used for formatting text documents, like README files.
+LLM	Large Language Model	An AI model trained on large text corpora capable of understanding and generating human-like language.
+W1 / W2 / W3	Week 1 / Week 2 / Week 3	Represents the weeks in which different learning skills (Thinking like a model, Prompting, RAGs) are being tested.
+
+
+
+Milestone 2: Product Insights Copilot: Build an AI-powered workflow that turns raw customer reviews into actionable product insights and ready-to-use support communication. You will analyze recent user feedback to identify key themes, detect recurring confusion around a specific fee or charge, and convert these insights into a structured weekly product update and a clear customer-facing explanation. Finally, the system should use Model Context Protocol (MCP) with an approval step to log these outputs into internal tools and prepare an email draft. This simulates a real-world setup where product teams monitor user sentiment and support teams proactively address common user confusion.
+
+Milestone 2
+Problem Statement
+Build an AI workflow for the same product you selected in Milestone 1 that transforms raw customer feedback into a structured internal update and a ready-to-use customer communication.
+
+Your system should:
+
+Analyze recent user reviews to identify key product issues and themes
+
+Detect a frequently misunderstood fee/charge from those insights
+
+Generate:
+
+A weekly internal product pulse
+A standardized explanation for that specific fee
+Finally, use MCP (with approval gating) to log and share this output across internal tools.
+
+The goal is to simulate a real Product + Support workflow where:
+
+Product teams track user sentiment
+Support teams proactively create clear explanations for recurring confusion
+What You Must Build
+Step 1 — Review Intelligence Layer
+Input:
+
+1 public reviews CSV (last 8–12 weeks)
+Your system must:
+
+Cluster reviews into max 5 themes
+Identify top 3 themes
+Extract 3 real user quotes
+Highlight 1 recurring confusion/pain point related to a fee/charge
+Step 2 — Weekly Product Pulse (Internal Output)
+Using the insights above, generate a ≤250-word structured weekly note:
+
+Summary of top themes
+Supporting user quotes
+Key observation (what’s going wrong / trending)
+3 action ideas for the product team
+Step 3 — Fee Explainer (Derived from Insights)
+Using the identified confusion from Step 1, generate a structured explanation:
+
+≤6 bullet points explaining the fee clearly
+Written in a neutral, facts-only tone
+Include 2 official source links
+Add: “Last checked: ”
+Important: This is not a random scenario. It must directly connect to what users are confused about in reviews.
+
+Required MCP Actions (Approval-Gated)
+Once both outputs are generated:
+
+1. Append to Notes/Doc
+{
+
+date,
+
+top_themes,
+
+weekly_pulse,
+
+identified_fee_issue,
+
+explanation_bullets,
+
+source_links
+
+}
+
+2. Create Email Draft
+Subject: Weekly Product Pulse + Customer Clarification —
+
+Body:
+
+Weekly product pulse
+Fee explanation (as a reusable support snippet)
+(No auto-send)
+
+How to Implement MCP
+You can use any of the following:
+
+A tool like Zapier or Make
+Function calling with an LLM
+A simple simulated approval step (button or input prompt)
+Minimum requirement:
+Show a user approval step before taking any action
+
+After approval:
+
+Append output to a document (e.g., Google Docs or Notion)
+Create an email draft (e.g., Gmail)
+Example:
+Reviews mention confusion about “exit load being charged unexpectedly”
+
+→ Theme: Pricing confusion
+
+→ Fee issue: Exit load misunderstanding
+
+→ Output: Weekly pulse + exit load explanation + saved to doc + email draft
+
+Deliverables
+Working prototype link or ≤3-min demo video
+Weekly product pulse (MD/PDF/Doc)
+Notes/Doc snippet showing appended entry
+Email draft screenshot/text
+Reviews CSV sample
+Source list (4–6 URLs)
+README:
+How to run
+Where MCP approval happens
+What fee issue was identified from reviews
+Skills Being Tested
+✔ Insight extraction from unstructured data
+
+✔ Theme clustering + signal detection
+
+✔ Connecting insights → communication
+
+✔ Controlled summarization
+
+✔ Structured explanation generation
+
+✔ Workflow orchestration
+
+✔ MCP tool calling + approval gating
+
+Milestone 3: Multi-Agent Support Desk: Build a multi-agent system that takes a real user question or complaint and drafts a support reply. Three specialist agents run in parallel: one finds the facts, one checks whether this is a known pattern, one checks the draft won't get you in trouble. An orchestrator merges them into a reply and an internal routing note. A reviewer blocks anything that breaks the facts-only rule before a human ever sees it.
+
+Multi-Agent System: Support Response Desk
+Pick the ame product you picked in Milestone 1.
+
+Brief
+Build a multi-agent system that takes a real user question or complaint and drafts a support reply. Three specialist agents run in parallel: one finds the facts, one checks whether this is a known pattern, one checks the draft won't get you in trouble. An orchestrator merges them into a reply and an internal routing note. A reviewer blocks anything that breaks the facts-only rule before a human ever sees it.
+
+Where this goes
+Milestone 1 gave you a cited FAQ corpus. Milestone 2 gave you clustered review themes and an approval-gated MCP workflow. This wires both into one system that answers a specific user instead of writing a weekly summary.
+
+The problem
+A support agent answering "why was I charged an exit load" needs three things at once, and they don't come from the same place.
+
+The fact lives in a scheme document. Whether forty other users asked the same thing this month decides if this is a reply or an escalation. And the draft has to not give investment advice, not quote a return figure, and not repeat back a PAN the user pasted into their complaint.
+
+One model asked to do all three does the first and forgets the rest. It writes a fluent, uncited paragraph ending in "you may want to consider staying invested longer", which is advice, and now you have a compliance problem instead of a support ticket.
+
+The architecture
+architechture
+
+
+What you build
+Input - A user question or complaint, typed in or pulled from your Milestone 2 reviews CSV.
+Three agents, in parallel - None of them waits on or reads another's output.
+Facts Agent : Retrieves the answer from your Milestone 1 corpus and returns it with one citation link. When the corpus doesn't cover it, it returns "not covered" and names what it searched. It doesn't fall back on general knowledge.
+Pattern Agent : Checks the complaint against your Milestone 2 themes. Returns whether this is recurring, rising or a one-off, with the count of reviews behind it and the window you used.
+Compliance Agent : Scans the incoming message and the outgoing draft for advice language, performance or return claims, and PII. PAN, Aadhaar, account numbers, phone numbers, emails and OTPs all get flagged and redacted before anything is stored.
+Orchestrator - Two outputs. A reply draft of three sentences or fewer, facts-only, with its citation link and a "last checked" date. And an internal routing note saying which team it goes to and why, using the Pattern Agent's signal to set priority.
+When the agents disagree, say Facts has a clean answer but Pattern shows forty people asking the same thing this week, the orchestrator says so rather than sending the reply and closing the ticket.
+
+Reviewer - Checks the draft before a human sees it. An uncited factual claim, anything that reads as advice, and any surviving PII are hard fails, sent back to the orchestrator once with the specific failure named. If the second attempt still fails, show the draft with the flag on it and don't offer the send.
+Refinement - The human pushes back and only the affected agents re-run. "Shorter" touches the orchestrator. "They're asking about a different scheme" touches Facts. "Check if this is the fee issue from last week" touches Pattern. Log which agents fired.
+Approval-gated MCP - Same gate as Milestone 2. Nothing moves without a human clicking approve. After approval, append the record to your doc and create the email draft. No auto-send.
+Rules
+Facts-only. No recommendations, no buy or sell language, no return or performance figures
+Every factual claim carries one citation link. No link means it doesn't ship
+No PII stored anywhere, including in logs and agent state
+Public sources only, same corpus as Milestone 1
+Three agents run in parallel, shown in your diagram and demo
+Reviewer rework capped at one round, refinement at five
+Reply drafts are three sentences or fewer with a "last checked" date
+Before you submit
+- Run 20 real complaints from your reviews CSV. Confirm all three agents returned structured output on every one, and that every reply either carries a citation or says the corpus doesn't cover it.
+
+- Check the branches Feed in one complaint the corpus answers cleanly, one it can't, one matching a recurring theme, and one containing a PAN or phone number. Log which agents fired on each and confirm the reviewer caught the PII.
+
+- Try to make it give advice Ask whether you should redeem, whether a scheme is good, what returns to expect. Rephrase, then ask again later in the same session. It should refuse every time.
+
+
+Graduation project: The Support Desk
+Pick the same product you picked in Milestone 1.
+
+Objective
+Build a deployed system that runs the support and product loop for one Indian investment platform. Reviews come in and become themes. User questions come in and become cited, compliance-checked reply drafts. A weekly pulse goes out to the product team. Nothing leaves without a human approving it.
+
+The problem
+Two teams are solving halves of the same problem and neither can see the other half.
+
+Support answers the same fee question forty times a month, writing it fresh each time, sometimes getting it wrong. Product reads a review dashboard that tells them "pricing confusion is up" without telling them which fee, or what support has been telling people about it.
+
+The connective tissue is data neither team has in one place: what the official documents actually say, what users are actually confused about, and how often. That's what you're building.
+
+What you bring forward
+Milestone 1 gave you a cited FAQ corpus over official pages, with a facts-only refusal. Milestone 2 gave you review clustering, the weekly pulse, the fee explainer and an approval-gated MCP workflow. Milestone 3 gave you the three-agent response desk with its reviewer.
+
+What's left is running them as one system on a schedule, the interface, evaluations over the assembled whole, and deployment.
+
+What you build
+A deployed web application with two loops.
+
+1. The weekly loop. Ingest your reviews CSV, cluster into a maximum of five themes, identify the top three, and pull the recurring fee or charge confusion. Generate the weekly pulse, 250 words or fewer, with supporting quotes and three action ideas. Generate the fee explainer, six bullets or fewer, facts-only, with two official source links and a "last checked" date. Both go through the approval gate before the doc append and the email draft.
+
+2. The response loop. A queue of incoming user questions. Each one runs through the three agents in parallel, the orchestrator, and the reviewer, producing a reply draft with its citation and an internal routing note. A human approves, edits or rejects each draft.
+
+3. The connection between them. This is what neither milestone did on its own. When the response loop sees the same question five times in a week, it shows up in the weekly pulse. When the weekly loop identifies a fee confusion, the explainer becomes the canonical answer the response loop reuses instead of drafting fresh. Build this link and show it working.
+
+4. Scope enforcement. Facts-only across both loops. No recommendations, no buy or sell language, no return or performance figures, no PII stored anywhere including logs and agent state. Enforced in code, not only in prompts.
+
+The interface
+A queue view of incoming questions with their draft replies, citations and any reviewer flags. A weekly pulse view with the themes, quotes and counts behind them. A sources panel showing where every factual claim came from, with its last-checked date. An approval screen listing exactly what will be written and where, before anything is written. And a way to see the canonical fee explainers the response loop is reusing.
+
+Rules
+Every factual claim carries one source link from your Milestone 1 corpus
+Public sources only. No third-party blogs, no app back-end screenshots
+When the corpus doesn't cover a question, the system says so and names what it searched
+Every theme traces to review ids, and every count states the window it covers
+No PII anywhere in the dataset, the interface, the logs or agent state
+Nothing is written or sent without a human approving that specific action
+Reply drafts stay at three sentences or fewer, the pulse at 250 words, the explainer at six bullets
+Evaluations
+Three checks minimum, running over the assembled system.
+
+Feasibility. Every question in the queue produces a draft or an explicit "not covered". Every theme carries review ids and a stated window. The pulse stays inside its word cap and the explainer inside its bullet cap. The weekly loop completes without manual intervention once triggered.
+
+Correctness of edits. A human edit to a draft changes only that draft. Approving one action doesn't trigger another. Rejecting a draft leaves the queue otherwise untouched. Test each and diff the state before and after.
+
+Grounding and compliance. Sample fifteen claims across both loops and confirm each traces to a source link or a review id. Feed in questions the corpus can't answer and confirm it says so. Then run advice requests, return-figure requests, and messages containing a PAN, an account number and a phone number, in both loops, rephrased and repeated. Confirm every one is refused or redacted, and that nothing sensitive reached the logs.
+
+What to submit
+The GitHub repo. README covers the architecture and setup, your source list, where the approval gate sits, how the two loops connect, what fee issue came out of your reviews, how to run the evals, and known limits. Include the reviews CSV sample, five sample questions with their drafts, the appended doc entry, the email draft, and your evaluation results.
+A working prototype link. Hosted app or notebook.
+A demo video under three minutes, only if you can't host. Show the weekly loop running end to end, one question through the response loop, one reviewer rejection, the approval gate, and one evaluation.
+Evaluation Rubric
+Voice UX & intent handling - 25%
+MCP usage & system design - 20%
+Grounding & RAG quality - 15%
+AI evals & iteration depth - 20%
+Workflow automation - 10%
+Deployment & code quality - 10%
+What we're grading
+Can you design a system where three data sources answer one question? Do you know where a language model stops being reliable, and does your system say so out loud? Can you build a gate that a compliance team would trust? Can you explain why you drew the lines where you did?
