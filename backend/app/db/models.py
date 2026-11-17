@@ -363,3 +363,9 @@ def redacted_columns() -> list[str]:
         for column in table.columns
         if column.name.endswith(REDACTED_SUFFIX)
     )
+
+
+# Refuse PII in any *_redacted column on every write (Phase 1 backstop).
+from app.guard.db_guard import install_db_write_guard  # noqa: E402
+
+install_db_write_guard(Base)

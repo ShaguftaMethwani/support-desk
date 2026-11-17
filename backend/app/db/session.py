@@ -14,8 +14,13 @@ from app.config import get_settings
 @lru_cache
 def get_engine() -> AsyncEngine:
     # Small pool: Neon's free tier and Render's 512 MB both favour few connections.
+    # hide_parameters keeps bound values (user text) out of SQLAlchemy error messages and logs.
     return create_async_engine(
-        get_settings().database_url, pool_size=5, max_overflow=5, pool_pre_ping=True
+        get_settings().database_url,
+        pool_size=5,
+        max_overflow=5,
+        pool_pre_ping=True,
+        hide_parameters=True,
     )
 
 

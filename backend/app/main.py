@@ -8,6 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api import health
 from app.config import Settings, get_settings
+from app.guard.log_filter import install_log_redaction
 from app.observability import configure_logging, get_logger
 
 log = get_logger(__name__)
@@ -18,6 +19,7 @@ _REQUEST_ID = re.compile(r"[A-Za-z0-9-]{8,64}")
 def create_app(settings: Settings | None = None) -> FastAPI:
     settings = settings or get_settings()
     configure_logging(settings.log_level, settings.log_json)
+    install_log_redaction()
 
     app = FastAPI(title="The Support Desk", version="0.1.0")
     app.add_middleware(

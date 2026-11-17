@@ -94,28 +94,28 @@ Phase 3 needs Phase 2's retriever only for the fee explainer. Clustering can sta
 **Goal:** the deterministic enforcement layer, complete and heavily tested before any model writes text.
 
 ### Tasks: ingress guard (`backend/app/guard/`)
-- [ ] **Regex detectors** for each PII type in architecture section 6.1: PAN, Aadhaar with Verhoeff checksum, Indian mobile numbers, email, account or folio numbers near keywords, and OTPs near keywords.
-- [ ] **Spoken-number normaliser.** Converts "nine eight seven six…" and "double five" into digits before detection. Needed for voice in Phase 7, but built here so the guard is complete.
-- [ ] **Presidio** with `en_core_web_sm`, used for person names and emails only. Indian ID formats stay with the regex detectors.
-- [ ] **Redactor.** Replaces each match with a typed token such as `[PAN_REDACTED]`. Returns `(clean_text, pii_flags)`. The original value is never returned, stored or logged.
-- [ ] **Log filter.** Every log record passes through the detectors before it is written. Each hit increments the `pii_log_redactions` counter.
+- [x] **Regex detectors** for each PII type in architecture section 6.1: PAN, Aadhaar with Verhoeff checksum, Indian mobile numbers, email, account or folio numbers near keywords, and OTPs near keywords.
+- [x] **Spoken-number normaliser.** Converts "nine eight seven six…" and "double five" into digits before detection. Needed for voice in Phase 7, but built here so the guard is complete.
+- [x] **spaCy** `en_core_web_sm`, used directly for person names at ingress only (Presidio dropped, see [guardrails.md](guardrails.md)). Indian ID formats stay with the regex detectors.
+- [x] **Redactor.** Replaces each match with a typed token such as `[PAN_REDACTED]`. Returns `(clean_text, pii_flags)`. The original value is never returned, stored or logged.
+- [x] **Log filter.** Every log record passes through the detectors before it is written. Each hit increments the `pii_log_redactions` counter.
 
 ### Tasks: policy engine (`backend/app/policy/`)
-- [ ] One validator function per rule in architecture section 6.2. Each returns `RuleResult(rule, passed, detail)`.
+- [x] One validator function per rule in architecture section 6.2. Each returns `RuleResult(rule, passed, detail)`.
   - `citation_required`: every factual sentence links to a chunk id that exists, on an allow-listed domain.
   - `advice_guard`: keyword and phrase list, written as data in a YAML file so it is easy to audit and extend.
   - `returns_guard`: percentages near return words. Must allow expense ratio and exit load percentages.
   - `pii_guard`: re-runs the ingress detectors.
   - `length_caps`: sentence counting must handle abbreviations such as "Rs.", "e.g." and "approx.", and decimals such as "1.5%".
   - `last_checked_present`, `explainer_sources`, `theme_provenance`.
-- [ ] `run_policy(artifact_type, artifact) -> list[RuleResult]` picks the right validators for each artefact type.
-- [ ] **Database write guard.** A SQLAlchemy `before_insert` and `before_update` hook runs `pii_guard` on every column ending in `_redacted`. Any hit raises an error, so unredacted text can't be stored even by mistake.
+- [x] `run_policy(artifact_type, artifact) -> list[RuleResult]` picks the right validators for each artefact type.
+- [x] **Database write guard.** A SQLAlchemy `before_insert` and `before_update` hook runs `pii_guard` on every column ending in `_redacted`. Any hit raises an error, so unredacted text can't be stored even by mistake.
 
 ### Tests
-- [ ] At least 60 PII cases covering valid formats, spaced and dashed formats, lower case, spoken forms, and false-positive traps such as a 12-digit number that fails the Aadhaar checksum, or "SIP of 5000".
-- [ ] At least 40 advice and returns cases, including subtle phrasing ("staying invested longer may help") and allowed phrasing ("you should receive your statement by email", "exit load is 1%").
-- [ ] Sentence counter tests with abbreviations and decimals.
-- [ ] A test that tries to insert a PAN into a `_redacted` column and expects an error.
+- [x] At least 60 PII cases covering valid formats, spaced and dashed formats, lower case, spoken forms, and false-positive traps such as a 12-digit number that fails the Aadhaar checksum, or "SIP of 5000".
+- [x] At least 40 advice and returns cases, including subtle phrasing ("staying invested longer may help") and allowed phrasing ("you should receive your statement by email", "exit load is 1%").
+- [x] Sentence counter tests with abbreviations and decimals.
+- [x] A test that tries to insert a PAN into a `_redacted` column and expects an error.
 
 ### Exit check
 - All guard and policy tests pass in CI without any network access.

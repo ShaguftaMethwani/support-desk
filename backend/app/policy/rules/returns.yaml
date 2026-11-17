@@ -1,0 +1,92 @@
+# Return and performance rules for the returns_guard validator.
+#
+# Two checks:
+# 1. A percentage near a return word, unless a fee or tax word is closer to it.
+#    "The expense ratio is 0.67%" and "exit load of 1%" pass. "returned 14%" fails.
+# 2. Claim patterns that promise or describe performance even without a number.
+#
+# Words are matched case-insensitively as whole words. Masked phrases are removed before
+# scanning, so "capital gains tax" and "Growth option" don't count as return words.
+
+window_chars: 50
+
+return_words:
+  - returns?
+  - returned
+  - cagr
+  - xirr
+  - irr
+  - yield(?:s|ed)?
+  - gains?
+  - growth
+  - grew
+  - grown
+  - performance
+  - performed
+  - outperform(?:ed|s|ing)?
+  - underperform(?:ed|s|ing)?
+  - appreciat(?:e|ed|ion)
+  - profits?
+  - earn(?:ed|s|ings)?
+  - delivered
+  - generated
+  - rose
+  - risen
+  - annuali[sz]ed
+
+fee_words:
+  - expense\s+ratio
+  - ter
+  - total\s+expense
+  - exit\s+load
+  - entry\s+load
+  - load
+  - stamp\s+duty
+  - stt
+  - securities\s+transaction\s+tax
+  - charges?
+  - fees?
+  - tax(?:ed|es)?
+  - tds
+  - gst
+  - commission
+  - brokerage
+  - deducted
+  - deduction
+  - levied
+  - slab
+  - surcharge
+  - cess
+
+mask_phrases:
+  - (?:long|short)[- ]term\s+capital\s+gains?
+  - capital\s+gains?
+  - ltcg
+  - stcg
+  - gains?\s+tax
+  - growth\s+(?:option|plan)
+  - (?:-|–)\s*growth\b
+  - direct\s+plan\s+growth
+  - idcw
+
+claims:
+  - id: expected_returns
+    pattern: \bexpected\s+returns?\b
+  - id: promised_returns
+    pattern: \b(?:guaranteed|assured|fixed|risk[- ]free|sure[- ]shot)\s+(?:returns?|income|profits?|gains?)\b
+  - id: reader_will_earn
+    pattern: \byou\s+(?:will|can|could|may|might|should)\s+(?:earn|get|make|expect|receive)\s+(?:a\s+)?(?:good|high|higher|great|better|steady|stable|attractive|decent|strong)?\s*(?:returns?|gains?|profits?|interest)\b
+  - id: double_money
+    pattern: \b(?:double|triple)\s+your\s+(?:money|investment|wealth)\b
+  - id: future_growth
+    pattern: \b(?:will|should|is\s+likely\s+to|are\s+likely\s+to|is\s+expected\s+to|are\s+expected\s+to)\s+(?:grow|rise|appreciate|outperform|beat\s+the|deliver\s+(?:good\s+|high\s+|strong\s+|better\s+)?returns?|generate\s+(?:good\s+|high\s+|strong\s+|better\s+)?returns?|give\s+(?:good\s+|high\s+|strong\s+|better\s+)?returns?)\b
+  - id: beat_benchmark
+    pattern: \b(?:outperform(?:ed|s)?|beat(?:en|s)?|underperform(?:ed|s)?)\s+(?:the|its)\s+(?:benchmark|market|index|category|peers)\b
+  - id: ranking
+    pattern: \b(?:top|best|worst|highest|strong(?:est)?)[- ](?:performing|performer)s?\b
+  - id: period_return
+    pattern: \b(?:\d+|one|three|five|ten)[- ](?:year|yr|month)s?\s+(?:returns?|cagr|performance)\b
+  - id: since_inception
+    pattern: \bsince[- ]inception\s+(?:returns?|cagr|performance)\b
+  - id: return_figure
+    pattern: \breturns?\s+(?:of|around|about|near|over|above|up\s+to|is|are|was|were)\s+(?:₹|rs\.?\s*)?\d

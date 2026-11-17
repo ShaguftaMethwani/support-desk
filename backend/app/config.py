@@ -76,6 +76,14 @@ class Settings(BaseSettings):
     llm_timeout_seconds: float = 30.0
     llm_cache_enabled: bool = True
 
+    # Domains a citation or source link may point to ("public sources only").
+    source_domains: list[str] = [
+        "hdfcfund.com",
+        "sebi.gov.in",
+        "amfiindia.com",
+        "indmoney.com",
+    ]
+
     weekly_trigger_token: SecretStr | None = None
 
     google_client_id: str | None = None

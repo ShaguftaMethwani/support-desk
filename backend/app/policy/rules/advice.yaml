@@ -1,0 +1,93 @@
+# Investment-advice rules for the advice_guard validator.
+#
+# A "block" match in outgoing text is a hard fail. Each rule has:
+#   id      - name shown to the reviewer and in eval reports
+#   scope   - artefacts it applies to: reply, explainer, pulse
+#             (the weekly pulse is internal and may recommend PRODUCT changes, so generic
+#             "we recommend" rules don't apply to it; investment-advice rules do)
+#   pattern - Python regular expression, matched case-insensitively
+#   note    - why the rule exists
+#
+# An "allow" match that overlaps a block match cancels it. Use allow rules for process
+# guidance that looks like advice. Known false positives and decisions are documented in
+# docs/guardrails.md.
+
+block:
+  - id: directive_investment_action
+    scope: [reply, explainer, pulse]
+    note: Telling the reader to take an investment action.
+    pattern: >-
+      \byou\s+(?:should|ought\s+to|may\s+want\s+to|might\s+want\s+to|would\s+do\s+well\s+to|could\s+consider|can\s+consider|may\s+consider|might\s+consider)\s+(?:(?:not|also|definitely|probably|really|still|perhaps|just)\s+)?(?:consider\s+)?(?:buy(?:ing)?|sell(?:ing)?|redeem(?:ing)?|invest(?:ing)?|switch(?:ing)?|hold(?:ing)?|exit(?:ing)?|stay(?:ing)?\s+invested|continue\s+(?:investing|your\s+sip|the\s+sip)|stop(?:ping)?\s+(?:your\s+|the\s+)?sip|pause\s+(?:your\s+|the\s+)?sip|withdraw|book(?:ing)?\s+profits?|shift|move\s+(?:your\s+)?(?:money|funds|investments?)|put\s+(?:your\s+)?money|allocate|increase\s+(?:your\s+)?(?:sip|investment|allocation)|reduce\s+(?:your\s+)?(?:sip|investment|allocation)|start\s+(?:a\s+)?sip|choose|pick|go\s+with|prefer|avoid|wait)\b
+
+  - id: first_person_recommendation
+    scope: [reply, explainer]
+    note: The assistant or AMC recommending anything to a customer.
+    pattern: \b(?:we|i)\s+(?:would\s+|strongly\s+|highly\s+)?(?:recommend|suggest|advise)\b
+
+  - id: recommend_to_reader
+    scope: [reply, explainer]
+    note: Passive or indirect recommendations aimed at the reader.
+    pattern: \b(?:recommend(?:ed|s)?|suggest(?:ed|s)?|advis(?:ed|able))\s+(?:that\s+)?(?:you|investors|customers|users)\b
+
+  - id: advisable_to
+    scope: [reply, explainer]
+    note: Normative framing that steers a decision.
+    pattern: \b(?:it\s+is|it's)\s+(?:advisable|recommended|wise|prudent|better|best|safer|smarter)\s+to\b
+
+  - id: market_timing
+    scope: [reply, explainer, pulse]
+    note: Opinions about timing an investment.
+    pattern: >-
+      \b(?:(?:it\s+is|it's|now\s+is|this\s+is)\s+(?:a\s+|the\s+)?(?:good|great|right|bad|wise|smart|ideal|perfect|best)\s+(?:time|moment|idea|choice|option|move|opportunity)\s+to\s+(?:buy|sell|invest|redeem|exit|enter|switch|hold|start)|good\s+time\s+to\s+(?:buy|sell|invest|redeem|exit|enter|switch))\b
+
+  - id: consider_investment_action
+    scope: [reply, explainer, pulse]
+    note: '"Consider investing" and similar nudges.'
+    pattern: \bconsider\s+(?:investing|buying|selling|redeeming|switching|holding|staying\s+invested|exiting|increasing\s+(?:your\s+)?sip|stopping\s+(?:your\s+)?sip)\b
+
+  - id: stay_invested
+    scope: [reply, explainer, pulse]
+    note: '"Staying invested longer may help" is advice even without a modal verb.'
+    pattern: \bstay(?:ing|s)?\s+invested\b
+
+  - id: product_judgement_for_reader
+    scope: [reply, explainer]
+    note: Calling a fund the best or right choice for someone.
+    pattern: >-
+      \b(?:best|better|top|ideal|safest|good|great|excellent|right|suitable|perfect)\s+(?:mutual\s+)?(?:funds?|schemes?|investments?|options?|choices?|picks?|plans?)\s+(?:for\s+(?:you|your|beginners|investors|long[- ]term|short[- ]term|tax\s+saving|retirement)|to\s+(?:buy|invest|choose|pick))\b
+
+  - id: product_judgement
+    scope: [reply, explainer, pulse]
+    note: Judging a fund as good or bad.
+    pattern: \b(?:is|are)\s+(?:a\s+|an\s+)?(?:good|great|excellent|bad|poor|safe|risky|solid|strong|weak|smart|wise)\s+(?:funds?|schemes?|investments?|options?|choices?|bets?)\b
+
+  - id: worth_it
+    scope: [reply, explainer, pulse]
+    note: '"Worth investing" is a judgement.'
+    pattern: \bworth\s+(?:investing|buying|holding|it|a\s+look|considering)\b
+
+  - id: personal_opinion
+    scope: [reply, explainer, pulse]
+    note: First-person opinions about investing.
+    pattern: \b(?:in\s+my\s+(?:opinion|view)|if\s+i\s+were\s+you|i\s+(?:would|'d)\s+(?:go\s+with|pick|choose|buy|invest|prefer|redeem|sell|hold))\b
+
+  - id: hype
+    scope: [reply, explainer, pulse]
+    note: Promotional certainty.
+    pattern: \b(?:safe\s+bet|no[- ]brainer|can'?t\s+go\s+wrong|must[- ](?:have|buy)|don'?t\s+miss)\b
+
+  - id: helps_grow_wealth
+    scope: [reply, explainer, pulse]
+    note: Promising a financial outcome.
+    pattern: \b(?:may|might|could|will|would|should|can)\s+help\s+(?:you\s+)?(?:grow|build|maximi[sz]e|increase|boost|beat|earn|generate|create)\s+(?:your\s+)?(?:wealth|returns?|money|corpus|gains?|profits?)\b
+
+  - id: imperative_trade_now
+    scope: [reply, explainer, pulse]
+    note: Imperative trading instructions with urgency.
+    pattern: (?:^|[.!?]\s+|\n)\s*(?:buy|sell|redeem|switch|hold|invest|exit|book\s+profits?)\s+(?:now|today|immediately|right\s+away|more|while)\b
+
+allow:
+  - id: consult_adviser
+    pattern: \b(?:consult|speak\s+to|talk\s+to)\s+(?:a|an|your)\s+(?:sebi[- ]registered\s+)?(?:investment\s+adviser|investment\s+advisor|financial\s+advis[eo]r|tax\s+advis[eo]r)\b
+  - id: process_expectation
+    pattern: \byou\s+should\s+(?:receive|get|see|be\s+able\s+to|check|verify|contact|log\s+in|visit|download|refer|keep|update|complete|note)\b

@@ -139,7 +139,7 @@ flowchart TB
 | **Speech-to-text** | **Groq-hosted Whisper** (`whisper-large-v3-turbo`) | Free tier and very fast. Needs no server memory, unlike self-hosting Whisper. The browser Web Speech API is a fallback for local development only. |
 | **Text-to-speech** | Browser `speechSynthesis` | No server round trip and no audio stored. |
 | **Clustering** | PCA to reduce dimensions, then KMeans with k chosen by silhouette score, capped at 5. Both from scikit-learn. | Deterministic with a fixed seed, so weekly runs are reproducible. PCA is light and starts instantly, unlike UMAP, which compiles code on first use. That matters on a free tier that sleeps. |
-| **PII detection** | Regex validators plus Microsoft Presidio with the small spaCy model (`en_core_web_sm`) | Regex is exact for Indian ID formats. Presidio catches names and emails in free text. The small spaCy model uses about 50 MB, against over 500 MB for the large one. |
+| **PII detection** | Regex validators plus the small spaCy model (`en_core_web_sm`) for person names, used directly | Regex is exact for Indian ID formats. spaCy catches names in free text and uses about 50 MB. Presidio was planned first, but it wraps the same model, adds dependencies, and one of them downloads data on first use, which breaks offline CI. |
 | **Scheduler** | **GitHub Actions cron** calls the protected trigger endpoint every Monday. A manual trigger button is also in the UI. | Free. It also wakes the sleeping free-tier service. An in-process scheduler would never fire while the service is asleep. |
 | **MCP tools** | **The existing Google Docs and Gmail MCP server** built in an earlier milestone, reused as-is | Already built and tested. The backend's allow-list exposes only the doc-append and create-draft tools, and the Google token is limited to Docs and Gmail compose. |
 | **Database hosting** | **Neon** free tier (Postgres with pgvector). Supabase free tier is an equal alternative. | Free, supports pgvector and doesn't expire. Render's free Postgres is deleted after a fixed period, so it isn't used. |
@@ -230,7 +230,7 @@ This is the code-level enforcement layer. It is plain Python with no LLM in the 
 ```mermaid
 flowchart LR
     IN[Raw text<br/>typed, transcript or CSV row] --> RX[Regex detectors]
-    RX --> PRE[Presidio NER<br/>names, emails]
+    RX --> PRE[spaCy NER<br/>names, ingress only]
     PRE --> RED[Redactor<br/>replace with tokens]
     RED --> OUT[Clean text + pii_flags]
     OUT --> SYS[Rest of the system]
@@ -241,10 +241,11 @@ flowchart LR
 | PAN | `[A-Z]{5}[0-9]{4}[A-Z]`, case-insensitive, allowing spaces |
 | Aadhaar | 12 digits, optionally grouped 4-4-4, plus a Verhoeff checksum to cut false positives |
 | Phone | Indian mobile numbers: optional `+91` or `0`, then 10 digits starting with 6–9 |
-| Email | RFC-style pattern plus Presidio |
+| Email and UPI id | RFC-style email pattern, plus a UPI id pattern |
 | Account or folio number | 9–18 digit sequences near keywords such as "account", "a/c", "folio" |
 | OTP | 4–8 digits near keywords such as "OTP", "code", "pin" |
 
+- **Two levels.** Person names are detected and redacted only at ingress. Outgoing drafts, the database write guard and the log filter use only the structured detectors, because corpus facts can legitimately name a fund manager. Every decision and known false positive is listed in [guardrails.md](guardrails.md).
 - Redaction replaces the value with a typed token such as `[PAN_REDACTED]`. The original value is **never stored**, not even hashed.
 - The guard returns `pii_flags`, a list of which types were found. The Compliance Agent and the routing note use these flags.
 - **Human-entered text goes through the guard too.** That covers draft edits, refinement feedback and corrected transcripts, not only customer messages. A support agent pasting a customer's PAN into an edit is redacted the same way.

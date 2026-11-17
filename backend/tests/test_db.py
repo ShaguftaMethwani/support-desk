@@ -9,12 +9,13 @@ import uuid
 from collections.abc import AsyncIterator
 
 import pytest
-from sqlalchemy import inspect, select, text
+from sqlalchemy import func, inspect, select, text
 from sqlalchemy.ext.asyncio import AsyncEngine, async_sessionmaker, create_async_engine
 
 from app.config import Settings
 from app.db.base import Base
-from app.db.models import CorpusChunk, CorpusSource, LlmCache
+from app.db.models import CorpusChunk, CorpusSource, LlmCache, Message
+from app.guard.db_guard import UnredactedPIIError
 from app.llm.cache import CachedResponse, PostgresCache
 
 pytestmark = pytest.mark.db
@@ -88,3 +89,16 @@ async def test_full_text_and_vector_columns_work(engine: AsyncEngine) -> None:
         await s.rollback()
     assert hit is not None
     assert nearest is not None
+
+
+async def test_pan_cannot_be_stored_in_postgres(engine: AsyncEngine) -> None:
+    sessions = async_sessionmaker(engine, expire_on_commit=False)
+    async with sessions() as s:
+        s.add(Message(channel="text", text_redacted="my PAN is ABCPD1234F", split_method="single"))
+        with pytest.raises(UnredactedPIIError):
+            await s.flush()
+        await s.rollback()
+        count = await s.scalar(
+            select(func.count()).select_from(Message).where(Message.text_redacted.contains("ABCPD"))
+        )
+    assert count == 0

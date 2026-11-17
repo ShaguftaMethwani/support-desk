@@ -1,4 +1,4 @@
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 from types import SimpleNamespace
 from typing import Any
 
@@ -7,6 +7,22 @@ import openai
 import pytest
 
 from app.config import Settings
+from app.guard.log_filter import PII_LOG_COUNTER, install_log_redaction
+from app.observability import counter_value
+
+# Production log redaction is active for the whole test run.
+install_log_redaction()
+
+
+@pytest.fixture(autouse=True)
+def _no_pii_in_logs(request: pytest.FixtureRequest) -> Iterator[None]:
+    """Fail any test that made the log filter redact something, i.e. tried to log user text.
+    Tests that deliberately exercise the filter opt out with @pytest.mark.allow_pii_logs."""
+    before = counter_value(PII_LOG_COUNTER)
+    yield
+    if request.node.get_closest_marker("allow_pii_logs") is None:
+        leaked = counter_value(PII_LOG_COUNTER) - before
+        assert leaked == 0, f"{leaked} PII value(s) reached the logs during this test"
 
 
 @pytest.fixture
