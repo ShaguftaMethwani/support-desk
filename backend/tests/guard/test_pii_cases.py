@@ -77,6 +77,9 @@ CASES: list[tuple[str, set[str]]] = [
     ("otp is four eight two nine one three", {"otp"}),
     ("rahul dot sharma at gmail dot com", {"email"}),
     ("A B C P D one two three four F", {"pan"}),
+    # Voice: Whisper ran the PAN's last letter into the next word ("F. Why" -> "FY")
+    ("My pan is ABCPE1234FY is my redemption delayed.", {"pan"}),
+    ("abcpe1234fwhy", {"pan"}),
     ("call me at nine eight seven, six five four, three two one zero", {"phone"}),
     # Several at once
     ("PAN ABCPD1234F, phone 9876543210, mail x.y@gmail.com", {"pan", "phone", "email"}),
@@ -99,6 +102,7 @@ CASES: list[tuple[str, set[str]]] = [
     ("follow @hdfcfund for updates", set()),
     ("₹1,00,000 invested in HDFC Liquid Fund", set()),
     ("ISIN INF179K01BB8 is listed in the SID", set()),
+    ("HDFCMF2024TER sheet", set()),  # 4th letter M is not a PAN holder type
 ]
 
 

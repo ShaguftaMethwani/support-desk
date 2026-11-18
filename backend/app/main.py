@@ -8,7 +8,7 @@ import structlog
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import actions, explainers, health, queue, weekly
+from app.api import actions, explainers, health, queue, voice, weekly
 from app.config import Settings, get_settings
 from app.guard.log_filter import install_log_redaction
 from app.observability import configure_logging, get_logger
@@ -63,6 +63,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(queue.router)
     app.include_router(actions.router)
     app.include_router(explainers.router)
+    app.include_router(voice.router)
     return app
 
 

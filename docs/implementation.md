@@ -415,6 +415,21 @@ The Google Docs and Gmail MCP server built earlier is reused as-is. No new MCP s
 - [ ] **Record test audio.** Save 10 clips for the parity eval and 3 clips containing a spoken PAN, account number and phone number.
 - [ ] **Look up Groq's data retention policy** for audio, and record it for the README's known limits.
 
+### Status (November 2026)
+- **Endpoint** (`backend/app/api/voice.py`, `backend/app/voice/`): `POST /chat/voice` takes the raw audio body. It isn't a multipart upload because FastAPI's `UploadFile` spills to a temporary file above 1 MB. The body is read as a stream into a capped in-memory buffer. A WAV clip over 30 seconds is refused from its header, before anything is sent; other formats are checked against Whisper's measured duration. The buffer is overwritten and emptied as soon as Whisper has it, including when the call fails. The middleware never logs request bodies, and the transcriber logs only sizes and timings.
+- **Transcription:** `whisper-large-v3-turbo` with the five scheme names and the fee terms in the `prompt`, `language="en"`, and a 20-per-minute limiter. Rate limits are retried twice; a refused clip is not retried.
+- **Guard first:** the raw transcript goes straight to the guard, which normalises spoken numbers and then redacts. Only the clean transcript, the PII types and the scheme suggestions are returned. The confirmed transcript goes to `POST /chat/message` with `channel: "voice"` and is guarded again, because the user may have edited it. Its redaction tokens still count as the message's PII flags.
+- **Guard fix:** Whisper ran a spoken PAN into the next word ("ABCPE1234F. Why" became "ABCPE1234FY"), which the PAN patterns missed. The guard now also redacts that form (a valid holder-type letter, followed by 2 to 4 extra letters), for typed text as well.
+- **Scheme suggestions** (`rapidfuzz`, threshold 70): two- and three-word stretches against the schemes' short names. "big cap" → Mid Cap (71), "flexy cap" → Flexi Cap (89), "mid cab" → Mid Cap (86). "small cap" (out of scope) and single words like "else" are never suggested. Suggestions carry character offsets and are never applied.
+- **Spoken replies:** each draft in the API has `spoken_text`, the reply without its Source and Last checked lines. The browser's speech synthesis (Phase 8) reads that.
+- **Test clips** (`evals/datasets/voice/`): 10 questions from the labelled intent set and 3 PII clips (a made-up PAN, bank account number and phone number). They are generated with macOS text-to-speech in three Indian English voices and one US voice (`make_clips.py`), as WAV and m4a. They are synthetic, so real browser recordings remain a useful addition.
+- **Groq retention** (checked November 2026, [Groq: your data](https://console.groq.com/docs/your-data)): no inference inputs kept by default, audio included. Inputs and outputs may be logged for up to 30 days to troubleshoot errors or investigate abuse. Zero Data Retention can be enabled in Data Controls. Recorded in the README and the architecture's known limits.
+- **Tests:** 24 unit tests (limits, wiping, redaction, suggestions, the Groq adapter with a fake client, the endpoint), 2 database tests (the voice channel and its PII flags, and an edited transcript guarded again), and 1 live Whisper test on the PAN clip.
+- **Exit check (18 November 2026):** all 13 clips went through the running API (`evals/run_voice.py`, results in `evals/results/voice_transcription.json`).
+  - **Parity clips:** all 10 transcribed with the right scheme names. Mean word accuracy 0.98, 8 of 10 exact; the other two lost or swapped one small word ("load HDFC", "or HDFC"), which the user can fix at confirmation.
+  - **PII clips:** all 3 came back flagged and redacted, after the PAN fix above. Their confirmed transcripts were then sent as voice messages.
+  - **Leak search:** the 3 made-up values were searched for in the server log and in all 70 text and JSON columns of the database, ignoring spaces and separators. No match.
+
 ### Exit check
 - The 10 test clips transcribe accurately, or are fixable at the confirmation step.
 - The spoken PII clips come back redacted, and a log and database search finds nothing.

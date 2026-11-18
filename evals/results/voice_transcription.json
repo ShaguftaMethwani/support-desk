@@ -1,0 +1,181 @@
+{
+  "summary": {
+    "clips": 13,
+    "parity_mean_word_accuracy": 0.98,
+    "parity_exact": 8,
+    "pii_ok": 3,
+    "failures": 0
+  },
+  "results": [
+    {
+      "id": "v01",
+      "kind": "parity",
+      "status": 200,
+      "expected": "Should I invest in HDFC Mid Cap Fund now?",
+      "transcript": "Should I invest in HDFC mid cap fund now?",
+      "word_accuracy": 1.0,
+      "pii_flags": [],
+      "suggestions": [],
+      "duration_seconds": 3.06
+    },
+    {
+      "id": "v02",
+      "kind": "parity",
+      "status": 200,
+      "expected": "Shall I redeem my HDFC ELSS units after the lock-in ends?",
+      "transcript": "Shall I redeem my HDFC ELSS units after the lock-in ends?",
+      "word_accuracy": 1.0,
+      "pii_flags": [],
+      "suggestions": [],
+      "duration_seconds": 4.47
+    },
+    {
+      "id": "v03",
+      "kind": "parity",
+      "status": 200,
+      "expected": "What returns did HDFC Large Cap Fund give last year?",
+      "transcript": "What returns did HDFC Large Cap Fund give last year?",
+      "word_accuracy": 1.0,
+      "pii_flags": [],
+      "suggestions": [],
+      "duration_seconds": 3.27
+    },
+    {
+      "id": "v04",
+      "kind": "parity",
+      "status": 200,
+      "expected": "What is the 5 year CAGR of HDFC Mid Cap Fund?",
+      "transcript": "What is the 5-year CAGR of HDFC Mid Cap Fund?",
+      "word_accuracy": 1.0,
+      "pii_flags": [],
+      "suggestions": [],
+      "duration_seconds": 4.12
+    },
+    {
+      "id": "v05",
+      "kind": "parity",
+      "status": 200,
+      "expected": "What is the exit load of HDFC Liquid Fund?",
+      "transcript": "What is the exit load HDFC liquid fund?",
+      "word_accuracy": 0.889,
+      "pii_flags": [],
+      "suggestions": [],
+      "duration_seconds": 2.81
+    },
+    {
+      "id": "v06",
+      "kind": "parity",
+      "status": 200,
+      "expected": "What is the lock-in period of HDFC ELSS Tax Saver?",
+      "transcript": "What is the lock-in period or HDFC ELSS Tax Saver?",
+      "word_accuracy": 0.909,
+      "pii_flags": [],
+      "suggestions": [],
+      "duration_seconds": 3.43
+    },
+    {
+      "id": "v07",
+      "kind": "parity",
+      "status": 200,
+      "expected": "What is the riskometer level of HDFC Flexi Cap Fund?",
+      "transcript": "What is the riskometer level of HDFC Flexi Cap Fund?",
+      "word_accuracy": 1.0,
+      "pii_flags": [],
+      "suggestions": [],
+      "duration_seconds": 3.62
+    },
+    {
+      "id": "v08",
+      "kind": "parity",
+      "status": 200,
+      "expected": "What is the expense ratio of the Direct Plan of HDFC Large Cap Fund?",
+      "transcript": "What is the expense ratio of the Direct Plan of HDFC Large Cap Fund?",
+      "word_accuracy": 1.0,
+      "pii_flags": [],
+      "suggestions": [],
+      "duration_seconds": 4.91
+    },
+    {
+      "id": "v09",
+      "kind": "parity",
+      "status": 200,
+      "expected": "My redemption from HDFC Mid Cap Fund has not arrived for 10 days",
+      "transcript": "My redemption from HDFC mid-cap fund has not arrived for 10 days.",
+      "word_accuracy": 1.0,
+      "pii_flags": [],
+      "suggestions": [],
+      "duration_seconds": 4.4
+    },
+    {
+      "id": "v10",
+      "kind": "parity",
+      "status": 200,
+      "expected": "Why was money deducted when I redeemed my liquid fund units?",
+      "transcript": "Why was money deducted when I redeemed my liquid fund units?",
+      "word_accuracy": 1.0,
+      "pii_flags": [],
+      "suggestions": [],
+      "duration_seconds": 3.29
+    },
+    {
+      "id": "p01",
+      "kind": "pii",
+      "status": 200,
+      "expected": "My PAN is [PAN_REDACTED]. Why is my redemption delayed?",
+      "transcript": "My pan is [PAN_REDACTED] is my redemption delayed.",
+      "word_accuracy": 0.9,
+      "pii_flags": [
+        "pan"
+      ],
+      "suggestions": [],
+      "duration_seconds": 4.68,
+      "pii_ok": true,
+      "asked": {
+        "status": 200,
+        "items": [
+          "8d6b2389-d4d5-4c66-9751-84cd6067df46"
+        ]
+      }
+    },
+    {
+      "id": "p02",
+      "kind": "pii",
+      "status": 200,
+      "expected": "My bank account number is [ACCOUNT_REDACTED], and my SIP failed.",
+      "transcript": "My bank account number is [ACCOUNT_REDACTED], and my SIP failed.",
+      "word_accuracy": 1.0,
+      "pii_flags": [
+        "account"
+      ],
+      "suggestions": [],
+      "duration_seconds": 8.67,
+      "pii_ok": true,
+      "asked": {
+        "status": 200,
+        "items": [
+          "0e0b4722-c5db-4253-af4d-22696f1f9061"
+        ]
+      }
+    },
+    {
+      "id": "p03",
+      "kind": "pii",
+      "status": 200,
+      "expected": "Please call me on [PHONE_REDACTED] about my exit load.",
+      "transcript": "Please call me on [PHONE_REDACTED] about my exit load.",
+      "word_accuracy": 1.0,
+      "pii_flags": [
+        "phone"
+      ],
+      "suggestions": [],
+      "duration_seconds": 5.02,
+      "pii_ok": true,
+      "asked": {
+        "status": 200,
+        "items": [
+          "674662a7-34a5-4e8c-99e4-af843d8921e7"
+        ]
+      }
+    }
+  ]
+}

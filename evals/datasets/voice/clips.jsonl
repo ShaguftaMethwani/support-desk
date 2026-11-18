@@ -1,0 +1,13 @@
+{"id": "v01", "kind": "parity", "label_id": "i01", "voice": "Rishi", "format": "wav", "text": "Should I invest in HDFC Mid Cap Fund now?"}
+{"id": "v02", "kind": "parity", "label_id": "i07", "voice": "Tara", "format": "m4a", "text": "Shall I redeem my HDFC ELSS units after the lock-in ends?"}
+{"id": "v03", "kind": "parity", "label_id": "i13", "voice": "Aman", "format": "wav", "text": "What returns did HDFC Large Cap Fund give last year?"}
+{"id": "v04", "kind": "parity", "label_id": "i15", "voice": "Rishi", "format": "m4a", "text": "What is the 5 year CAGR of HDFC Mid Cap Fund?"}
+{"id": "v05", "kind": "parity", "label_id": "i19", "voice": "Tara", "format": "wav", "text": "What is the exit load of HDFC Liquid Fund?"}
+{"id": "v06", "kind": "parity", "label_id": "i23", "voice": "Aman", "format": "m4a", "text": "What is the lock-in period of HDFC ELSS Tax Saver?"}
+{"id": "v07", "kind": "parity", "label_id": "i26", "voice": "Samantha", "format": "wav", "text": "What is the riskometer level of HDFC Flexi Cap Fund?"}
+{"id": "v08", "kind": "parity", "label_id": "i29", "voice": "Rishi", "format": "m4a", "text": "What is the expense ratio of the Direct Plan of HDFC Large Cap Fund?"}
+{"id": "v09", "kind": "parity", "label_id": "i31", "voice": "Tara", "format": "wav", "text": "My redemption from HDFC Mid Cap Fund has not arrived for 10 days"}
+{"id": "v10", "kind": "parity", "label_id": "i34", "voice": "Aman", "format": "m4a", "text": "Why was money deducted when I redeemed my liquid fund units?"}
+{"id": "p01", "kind": "pii", "pii": ["pan"], "voice": "Rishi", "format": "wav", "say": "My PAN is A B C P E 1 2 3 4 F. Why is my redemption delayed?", "text": "My PAN is [PAN_REDACTED]. Why is my redemption delayed?"}
+{"id": "p02", "kind": "pii", "pii": ["account"], "voice": "Tara", "format": "m4a", "say": "My bank account number is 5 0 1 0 0 2 3 4 5 6 7 8 9 1, and my SIP failed.", "text": "My bank account number is [ACCOUNT_REDACTED], and my SIP failed."}
+{"id": "p03", "kind": "pii", "pii": ["phone"], "voice": "Aman", "format": "wav", "say": "Please call me on nine eight seven six five four three two one zero about my exit load.", "text": "Please call me on [PHONE_REDACTED] about my exit load."}

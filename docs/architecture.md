@@ -704,6 +704,10 @@ sequenceDiagram
 - **The transcript is redacted before the user sees it.** That way PII is never even echoed back.
 - **Scheme name hints.** The five scheme names and fee terms are passed in the Groq Whisper `prompt` parameter. After transcription, fuzzy matching maps near-misses to the correct scheme name. The user still confirms.
 - **Spoken replies** read only the reply text. The citation and `Last checked` date stay on screen.
+- **Read as a stream, wiped after use.** The endpoint takes the raw audio body, not a multipart upload, because FastAPI's `UploadFile` spills to a temporary file above 1 MB. The size is capped while it streams in. A WAV clip's length is checked from its header before it is sent; for other formats, Whisper's measured duration is checked and a clip over 30 seconds is refused. The buffer is overwritten and emptied as soon as Whisper has it, even when the call fails.
+- **Suggestions, not fixes.** Two- and three-word stretches are compared with the schemes' short names ("Mid Cap", "Tax Saver") using rapidfuzz. Single words are skipped ("else" would match "ELSS"), and so is "small" (HDFC Small Cap Fund is out of scope). Each suggestion carries its position in the transcript, so the interface can offer it as a one-click change.
+- **The confirmed transcript is guarded again,** because the user may have typed into it. Its existing redaction tokens still count as the message's PII flags.
+- **Groq's retention.** By default Groq keeps no inference inputs, audio included. It may log inputs and outputs for up to 30 days when troubleshooting errors or investigating abuse. Zero Data Retention can be turned on in the account's Data Controls (checked November 2026).
 
 ---
 
@@ -936,7 +940,7 @@ grad-proj/
 - **Keyword guards** can block legitimate phrasing, such as "you should receive your statement by email". The false positive rate is tracked in the evals, and the reviewer flag shows which rule fired.
 - **Groq free-tier limits** cap requests and tokens per minute and per day. A full eval run can hit the daily cap. Caching and the fallback model reduce this. Run large eval suites on separate days if needed.
 - **The gpt-oss models** sometimes break length caps or slip into advice phrasing. The reviewer catches these, but they raise the rework rate and use more calls.
-- **Spoken PII reaches Groq.** Audio is sent to Groq before redaction. The system never stores audio or unredacted transcripts.
+- **Spoken PII reaches Groq.** Audio is sent to Groq before redaction. The system never stores audio or unredacted transcripts. Groq keeps no inputs by default but may log them for up to 30 days for troubleshooting or abuse checks; turning on Zero Data Retention in Groq's Data Controls removes that. Whisper can also run a spoken PAN into the next word ("ABCPE1234F. Why" heard as "ABCPE1234FY"); the guard redacts that form too.
 - **Whisper accuracy** on Indian-accented speech and fund names is imperfect. Transcript confirmation and fuzzy scheme matching reduce this but don't remove it.
 - **Question splitting** can misjudge tightly linked questions, such as "what's the exit load and why was I charged it?". The coverage check prevents invented questions but not every wrong split. The support agent can see each part and its parent message in the queue.
 - **Clustering at k ≤ 5** can merge distinct issues on a small review set. Theme provenance lets a human check.

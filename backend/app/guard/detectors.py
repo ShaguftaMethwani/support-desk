@@ -25,6 +25,12 @@ _PAN_ANY_CASE = re.compile(
     _NOT_ALNUM_BEFORE + rf"[A-Za-z]{{3}}[{_PAN_HOLDER_TYPES}{_PAN_HOLDER_TYPES.lower()}]"
     r"[A-Za-z]\d{4}[A-Za-z]" + _NOT_ALNUM_AFTER
 )
+# Run into the next word by speech-to-text: "ABCPE1234F. Why" heard as "ABCPE1234FY". The
+# 4th letter must be a valid holder type; the whole token is redacted.
+_PAN_GLUED = re.compile(
+    _NOT_ALNUM_BEFORE + rf"[A-Za-z]{{3}}[{_PAN_HOLDER_TYPES}{_PAN_HOLDER_TYPES.lower()}]"
+    r"[A-Za-z]\d{4}[A-Za-z]{2,4}" + _NOT_ALNUM_AFTER
+)
 # After the word "PAN", any case and separators: "my pan is abcde 1234 f".
 _PAN_AFTER_KEYWORD = re.compile(
     r"(?i)\bpan(?:\s*(?:card|no\.?|num(?:ber)?|#))*(?![A-Za-z])(?:\s*(?:is|:|-|=)\s*|\s+)"
@@ -66,7 +72,7 @@ _CARD = re.compile(r"(?<![\d])\d{4}([ -])\d{4}\1\d{4}\1\d{4}(?![\d])")
 
 
 def _pan(text: str) -> Iterator[PiiMatch]:
-    for pattern in (_PAN_UPPER, _PAN_ANY_CASE):
+    for pattern in (_PAN_UPPER, _PAN_ANY_CASE, _PAN_GLUED):
         for m in pattern.finditer(text):
             yield PiiMatch(m.start(), m.end(), PiiType.PAN)
     for m in _PAN_AFTER_KEYWORD.finditer(text):

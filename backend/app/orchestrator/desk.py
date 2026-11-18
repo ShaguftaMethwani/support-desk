@@ -25,7 +25,7 @@ from pydantic import BaseModel
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from app.agents.compliance import ComplianceResult, run_compliance
+from app.agents.compliance import ComplianceResult, pii_types, run_compliance
 from app.agents.facts import FactsAgent, FactsResult, SourceCitation
 from app.agents.pattern import PatternResult, PatternSettings, run_pattern
 from app.config import Settings
@@ -124,12 +124,14 @@ async def intake_message(
     session_id: uuid.UUID | None,
 ) -> Intake:
     clean = guard(raw_text)
+    # A confirmed voice transcript was redacted before the user saw it: its tokens still count.
+    pii_flags = sorted(set(clean.pii_flags) | set(pii_types(clean.text)))
     split = await split_message(clean.text, deps.llm)
     message = Message(
         session_id=session_id,
         channel=channel,
         text_redacted=clean.text,
-        pii_flags=clean.pii_flags,
+        pii_flags=pii_flags,
         split_method=split.method,
         parts_dropped=split.dropped,
     )
@@ -159,7 +161,7 @@ async def intake_message(
             now=deps.now(),
         )
         ids.append(item.id)
-    return Intake(message.id, ids, split.dropped, split.method, clean.pii_flags)
+    return Intake(message.id, ids, split.dropped, split.method, pii_flags)
 
 
 # --- agents ---------------------------------------------------------------------------------

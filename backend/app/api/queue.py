@@ -12,7 +12,7 @@ POST /queue/import-csv       turn selected reviews into queue items
 
 import time
 import uuid
-from typing import Annotated, Any
+from typing import Annotated, Any, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
@@ -59,6 +59,11 @@ def _http(exc: DeskError) -> HTTPException:
     return HTTPException(exc.status, str(exc))
 
 
+def spoken_text(reply: str) -> str:
+    lines = [ln for ln in reply.splitlines() if not ln.startswith(("Source:", "Last checked:"))]
+    return " ".join(" ".join(lines).split())
+
+
 def draft_view(d: DraftVersion | None) -> dict[str, Any] | None:
     if d is None:
         return None
@@ -66,6 +71,9 @@ def draft_view(d: DraftVersion | None) -> dict[str, Any] | None:
         "id": str(d.id),
         "version": d.version,
         "reply": d.reply_redacted,
+        # What a spoken reply reads: the reply without its Source and Last checked lines,
+        # which stay on screen (architecture section 11).
+        "spoken_text": spoken_text(d.reply_redacted),
         "citation": d.citation,
         "last_checked": d.last_checked.isoformat() if d.last_checked else None,
         "source_type": d.source_type,
@@ -100,6 +108,9 @@ def item_view(item: QueueItem, draft: DraftVersion | None, channel: str | None) 
 class ChatRequest(BaseModel):
     text: str = Field(min_length=1, max_length=4000)
     session_id: uuid.UUID | None = None
+    # "voice" for a transcript the user confirmed after POST /chat/voice. It is guarded again
+    # here like any text: the user may have edited it.
+    channel: Literal["text", "voice"] = "text"
 
 
 @router.post("/chat/message")
@@ -107,7 +118,9 @@ async def chat_message(body: ChatRequest, user: User, session: Session, deps: De
     started = time.monotonic()
     chat = await open_session(session, body.session_id, user.id, ttl=session_ttl(deps.settings))
     state = snapshot(chat)
-    intake = await intake_message(session, deps, body.text, channel="text", session_id=chat.id)
+    intake = await intake_message(
+        session, deps, body.text, channel=body.channel, session_id=chat.id
+    )
     await session.commit()
     intake_done = time.monotonic()
 

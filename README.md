@@ -97,6 +97,23 @@ curl -X POST localhost:8000/actions/<id>/reject
 curl -X POST localhost:8000/actions/<id>/retry          # a failed action, under its approval
 ```
 
+## Voice
+
+Spoken questions take the same path as typed ones. The browser posts the recorded clip (webm, ogg, wav, mp3, m4a or flac, at most 30 seconds) as the raw request body:
+
+```bash
+curl -X POST localhost:8000/chat/voice -H 'content-type: audio/wav' \
+  --data-binary @evals/datasets/voice/clips/v05.wav
+```
+
+- **What comes back.** The transcript, already redacted, plus the PII types removed and any suggestions for misheard scheme names ("big cap" → "Mid Cap"). Suggestions are never applied automatically.
+- **Confirming.** The user confirms or edits the transcript, which then goes to `POST /chat/message` with `"channel": "voice"`.
+- **Spoken replies.** Each draft has a `spoken_text` field: the reply without its source lines, which stay on screen.
+- **Nothing is kept.** Audio and the raw transcript are never stored or logged.
+- **Groq's retention.** Transcription is done by Groq Whisper (`whisper-large-v3-turbo`). By default Groq keeps no inputs, but it may log them for up to 30 days for troubleshooting or abuse checks. Turn on Zero Data Retention in the Groq console's Data Controls to prevent even that ([Groq: your data](https://console.groq.com/docs/your-data), checked November 2026).
+
+**Test clips.** The test clips are in `evals/datasets/voice/`. `make_clips.py` regenerates them with macOS text-to-speech. Run `uv run python ../evals/run_voice.py` from `backend/`, with the API running, to transcribe them.
+
 ## Loop connector
 
 The two loops feed each other (architecture section 9):

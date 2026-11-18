@@ -74,6 +74,16 @@ class Settings(BaseSettings):
     large_tpm: int = 8000
     llm_max_retries: int = 3
     llm_timeout_seconds: float = 30.0
+    # Voice (architecture section 11). Groq Whisper; clips are capped at 30 seconds.
+    whisper_model: str = "whisper-large-v3-turbo"
+    whisper_rpm: int = 20  # Groq free tier
+    whisper_timeout_seconds: float = 30.0
+    voice_max_seconds: float = 30.0
+    # A size cap checked while the upload streams in: 30 s of 48 kHz stereo WAV is 5.8 MB;
+    # a browser's webm/opus clip of 30 s is about 120 KB.
+    voice_max_bytes: int = 6_000_000
+    # rapidfuzz ratio from which a misheard scheme name ("big cap") gets a suggestion.
+    voice_scheme_min_score: float = 70.0
     llm_cache_enabled: bool = True
 
     # Below this cosine similarity, the Facts Agent answers "not covered" without a model call.
