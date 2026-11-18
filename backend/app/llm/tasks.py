@@ -15,6 +15,7 @@ TASK_TIERS: dict[str, Tier] = {
     "split": Tier.SMALL,
     "refine_classify": Tier.SMALL,
     "theme_label": Tier.SMALL,
+    "quote_pick": Tier.SMALL,
     "compliance_check": Tier.SMALL,
     "facts": Tier.LARGE,
     "orchestrate": Tier.LARGE,

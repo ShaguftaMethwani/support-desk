@@ -1,0 +1,33 @@
+review_id,source,date,rating,text
+fx:payments:0,app_store,2026-11-16,1,UPI payment failed again and the money was debited from my bank account
+fx:payments:1,play_store,2026-11-13,2,my UPI payment is stuck pending and the bank account was debited twice
+fx:payments:2,app_store,2026-11-10,1,payment failed while adding money through UPI and the debited amount never came back
+fx:payments:3,play_store,2026-11-07,3,every UPI payment fails at checkout although my bank account shows the money debited
+fx:payments:4,app_store,2026-11-04,1,adding money by UPI failed three times today and the bank debited the amount
+fx:payments:5,play_store,2026-11-01,2,UPI mandate payment keeps failing and my bank says the account was already debited
+fx:payments:6,app_store,2026-10-29,4,payment page hangs after UPI approval and the money is debited from my account
+fx:payments:7,play_store,2026-10-26,1,"failed UPI payment, money debited from bank account, refund still not received"
+fx:support:0,app_store,2026-10-23,1,customer support never replies to my ticket and the chat bot is useless
+fx:support:1,play_store,2026-10-20,2,raised a support ticket a week ago and customer care has not replied at all
+fx:support:2,app_store,2026-10-17,1,the chat bot cannot raise a ticket and customer support does not answer emails
+fx:support:3,play_store,2026-10-14,3,"support team closed my ticket without any reply, customer care is very poor"
+fx:support:4,app_store,2026-10-11,1,"no reply from customer support for ten days, the bot keeps repeating the same answer"
+fx:support:5,play_store,2026-10-08,2,"customer care chat is a bot loop, impossible to reach a human for my ticket"
+fx:support:6,app_store,2026-10-05,4,"support ticket ignored, customer support replies with copy paste answers only"
+fx:support:7,play_store,2026-10-02,1,"waited on chat for an hour, customer support bot never connected me to an agent"
+fx:speed:0,app_store,2026-09-29,1,the app is very slow to open and the portfolio screen keeps loading forever
+fx:speed:1,play_store,2026-09-26,2,after the latest update the app crashes and the portfolio page loads very slowly
+fx:speed:2,app_store,2026-09-23,1,app freezes on the home screen and portfolio values take minutes to load
+fx:speed:3,play_store,2026-09-20,3,"very slow app, every screen keeps loading and sometimes the app crashes completely"
+fx:speed:4,app_store,2026-09-17,1,"portfolio screen is stuck loading after update, the app is slow and laggy"
+fx:speed:5,play_store,2026-09-14,2,the app hangs while loading my portfolio and crashes when I switch tabs
+fx:speed:6,app_store,2026-09-11,4,"slow loading everywhere in the app, portfolio refresh takes too long to finish"
+fx:speed:7,play_store,2026-09-08,1,app keeps crashing on startup and the portfolio screen loads extremely slowly
+fx:fees:0,play_store,2026-11-11,1,"exit load was deducted when I redeemed my mutual fund units within a year, nobody told me"
+fx:fees:1,play_store,2026-11-10,2,"why is there an exit load on my mutual fund redemption, the amount credited was less"
+fx:fees:2,play_store,2026-11-09,1,"got less amount after I sold my mutual fund units, exit load cut was never explained"
+fx:fees:3,play_store,2026-11-08,3,"exit load charged on my SIP units redeemed early, please explain this charge clearly"
+fx:short:0,play_store,2026-11-10,5,nice app
+fx:dup:0,play_store,2026-11-01,1,UPI payment failed again and the money was debited from my bank account
+fx:old:0,play_store,2026-01-05,1,an old review outside the window about UPI payments failing every single day
+fx:pii:0,app_store,2026-11-12,2,"support asked me to share my PAN ABCDE1234F over chat, the ticket is still open with no reply"

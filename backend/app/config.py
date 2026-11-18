@@ -89,6 +89,20 @@ class Settings(BaseSettings):
     ]
 
     weekly_trigger_token: SecretStr | None = None
+    # Weekly loop (architecture section 8).
+    reviews_csv_path: Path = REPO_ROOT / "data" / "reviews_sample.csv"
+    weekly_window_weeks: int = 12  # the review sample covers the last 12 weeks
+    weekly_min_themes: int = 3  # KMeans tries k = min .. max; the pulse needs a top 3
+    weekly_max_themes: int = 5
+    # Reviews shorter than this are counted but not clustered: "nice app" carries no theme.
+    theme_min_words: int = 8
+    weekly_cluster_seed: int = 42
+    # Two reviews this similar (cosine) are near-duplicates; only the first is kept.
+    review_dedupe_similarity: float = 0.95
+    # A fee type needs at least this many reviews before it counts as "fee confusion".
+    fee_min_reviews: int = 3
+    # Resume runs left in_progress when the API starts (off in unit tests).
+    weekly_resume_on_startup: bool = True
 
     google_client_id: str | None = None
     google_client_secret: SecretStr | None = None

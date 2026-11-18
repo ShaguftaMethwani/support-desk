@@ -57,3 +57,19 @@ uv run python ../evals/run_facts.py      # Facts Agent test set (uses Groq, cach
 ```
 
 HDFC documents must be downloaded by hand first. See [backend/corpus/manual/README.md](backend/corpus/manual/README.md).
+
+## Weekly loop
+
+```bash
+# collect a fresh review sample (PII is removed before anything is written)
+uv run --with google-play-scraper python -m scripts.collect_reviews --weeks 12
+# start a run (the API must be running; the token is WEEKLY_TRIGGER_TOKEN)
+curl -X POST localhost:8000/weekly/run -H "Authorization: Bearer $WEEKLY_TRIGGER_TOKEN"
+curl localhost:8000/weekly/<run_id> -H "Authorization: Bearer $WEEKLY_TRIGGER_TOKEN"
+```
+
+**Exit load hypothesis:** rejected by the data. In the 12-week sample (1,085 reviews), no review
+mentions exit load. The mutual fund fee issue users raise is Direct vs Regular plans (distributor
+commission); most other charge complaints are about INDMoney's own brokerage and US-investing
+charges, which the corpus does not cover. See [docs/implementation.md](docs/implementation.md),
+Phase 3 status.

@@ -153,11 +153,11 @@ Phase 3 needs Phase 2's retriever only for the fee explainer. Clustering can sta
 - [x] **Retrieval test set** of 25 questions with the expected chunk or source, covering all 5 schemes and the common facts: expense ratio, exit load, minimum SIP, lock-in, riskometer, benchmark and statements.
 
 ### Status (November 2026)
-- **Automated sources ingested:** SEBI (3), AMFI (3), and HDFC's Statement of Additional Information from AMFI's portal. 7 sources, 226 chunks.
-- **Manual sources pending:** 8 HDFC documents. hdfcfund.com blocks automated requests, so they are downloaded by hand. See `backend/corpus/manual/README.md`.
+- **Corpus:** 15 sources, 630 chunks. SEBI (3), AMFI (3), HDFC's Statement of Additional Information from AMFI's portal, and 8 HDFC documents downloaded by hand (5 KIMs, the September 2026 factsheet, the daily TER spreadsheet and the statements guide), each with its exact hdfcfund.com URL.
+- **Parsing additions:** `.xlsx` spreadsheets (the TER file: latest date per scheme only), and vertically merged PDF table cells repeated on each row they cover, so factsheet scheme rows keep their values.
 - **Scheme names confirmed** against AMFI's scheme master data. AMFI lists the ELSS fund as "HDFC ELSS - Tax Saver Fund", kept as an alias.
-- **Retrieval test set:** 26 questions, 18 answerable now: 18 of 18 hits in the top 4. The other 8 run once the HDFC documents are in.
-- **Facts Agent:** 18 of 18 answered with a correct citation, and 5 of 5 off-topic questions returned as "not covered" with search details.
+- **Retrieval test set:** 26 of 26 questions have a correct source in the top 4.
+- **Facts Agent:** 26 of 26 answered with a correct citation, and 5 of 5 off-topic questions returned as "not covered" with search details. The riskometer question expects "not covered": the level is only drawn as an image in the KIM and factsheet.
 - **Not done:** the optional early deploy to check memory on Render.
 
 ### Exit check
@@ -173,32 +173,45 @@ Phase 3 needs Phase 2's retriever only for the fee explainer. Clustering can sta
 **Goal:** the Milestone 2 pipeline running end to end with no manual steps, up to "awaiting approval".
 
 ### Tasks: reviews data
-- [ ] **Collect INDMoney reviews** from the last 8–12 weeks of Play Store and App Store reviews, for example with the `google-play-scraper` package and the App Store RSS feed. Save as CSV with `review_id, source, date, rating, text`.
-- [ ] **Clean the sample.** Run the ingress guard over it and commit only the redacted version as `data/reviews_sample.csv`.
+- [x] **Collect INDMoney reviews** from the last 8–12 weeks of Play Store and App Store reviews, for example with the `google-play-scraper` package and the App Store RSS feed. Save as CSV with `review_id, source, date, rating, text`.
+- [x] **Clean the sample.** Run the ingress guard over it and commit only the redacted version as `data/reviews_sample.csv`.
 
 ### Tasks: pipeline (`backend/app/weekly/`)
-- [ ] **Run record.** `weekly_run` with the window and a `stage_log`. Each stage saves its status, so an interrupted run resumes from the last finished stage.
-- [ ] **Ingest.** Guard, window filter, near-duplicate removal and insert.
-- [ ] **Cluster.**
+- [x] **Run record.** `weekly_run` with the window and a `stage_log`. Each stage saves its status, so an interrupted run resumes from the last finished stage.
+- [x] **Ingest.** Guard, window filter, near-duplicate removal and insert.
+- [x] **Cluster.**
   - Embed reviews, plus any queue questions in the window once Phase 4 exists.
   - Reduce dimensions with PCA, then run KMeans for k = 2 to 5 with a fixed seed. Pick k by silhouette score.
   - Store `review_ids` and `count` per theme.
-- [ ] **Label themes** with the small model, using the 8 reviews closest to each cluster centre. The output is a short label plus a one-line description.
-- [ ] **Rank** themes by count and mark the top 3.
-- [ ] **Quotes.** The model picks 3 review ids from the top themes. Code copies the text and checks it is a substring of the stored review. The model never writes quote text.
-- [ ] **Fee confusion detector.** Fee lexicon scoring as in architecture section 8.2, with a minimum-count threshold. If none qualifies, the run records "no fee confusion this week".
-- [ ] **Fee explainer.** Retrieves through the Phase 2 retriever, filtered to fee documents. The large model writes at most 6 bullets. Code attaches 2 source links and the `Last checked` date from `fetched_at`.
-- [ ] **Weekly pulse.** The large model writes it from the top themes, quotes, counts and windows, with at most 250 words and 3 action ideas.
-- [ ] **Validation.** Run the policy engine on both. On failure, regenerate once with the named failure. On a second failure, mark the run failed and show why.
-- [ ] **Trigger endpoint.** `POST /weekly/run` runs the loop as a FastAPI background task and returns the run id immediately. It is protected by the trigger token. `GET /weekly/{run_id}` returns the run status for polling.
-- [ ] **Resume on startup.** A startup hook finds runs left `in_progress` and resumes each from its last finished stage.
-- [ ] **Pending actions for the run.** A validated run creates a doc append and an email draft action, plus a `promote_canonical` action when it has a fee explainer. The gate that executes them comes in Phase 5.
+- [x] **Label themes** with the small model, using the 8 reviews closest to each cluster centre. The output is a short label plus a one-line description.
+- [x] **Rank** themes by count and mark the top 3.
+- [x] **Quotes.** The model picks 3 review ids from the top themes. Code copies the text and checks it is a substring of the stored review. The model never writes quote text.
+- [x] **Fee confusion detector.** Fee lexicon scoring as in architecture section 8.2, with a minimum-count threshold. If none qualifies, the run records "no fee confusion this week".
+- [x] **Fee explainer.** Retrieves through the Phase 2 retriever, filtered to fee documents. The large model writes at most 6 bullets. Code attaches 2 source links and the `Last checked` date from `fetched_at`.
+- [x] **Weekly pulse.** The large model writes it from the top themes, quotes, counts and windows, with at most 250 words and 3 action ideas.
+- [x] **Validation.** Run the policy engine on both. On failure, regenerate once with the named failure. On a second failure, mark the run failed and show why.
+- [x] **Trigger endpoint.** `POST /weekly/run` runs the loop as a FastAPI background task and returns the run id immediately. It is protected by the trigger token. `GET /weekly/{run_id}` returns the run status for polling.
+- [x] **Resume on startup.** A startup hook finds runs left `in_progress` and resumes each from its last finished stage.
+- [x] **Pending actions for the run.** A validated run creates a doc append and an email draft action, plus a `promote_canonical` action when it has a fee explainer. The gate that executes them comes in Phase 5.
 
 ### Tests
-- [ ] A fixed fixture CSV gives a reproducible set of clusters, using the fixed seed.
-- [ ] Every theme has review ids and a window. Every quote is a verbatim substring.
-- [ ] Pulse and explainer stay within their caps on 3 runs.
-- [ ] A fixture with no fee mentions produces "no fee confusion" and no explainer.
+- [x] A fixed fixture CSV gives a reproducible set of clusters, using the fixed seed.
+- [x] Every theme has review ids and a window. Every quote is a verbatim substring.
+- [x] Pulse and explainer stay within their caps on 3 runs.
+- [x] A fixture with no fee mentions produces "no fee confusion" and no explainer.
+
+### Status (November 2026)
+- **Review sample:** 1,085 INDMoney reviews from 26 Aug to 17 Nov 2026 (978 Play Store, 107 App Store), collected by `backend/scripts/collect_reviews.py`. Every text goes through the ingress guard before anything is written, so raw text never reached the disk; author names are never read. 124 names redacted, no other PII found. The guard over-redacts some Hindi and Hinglish words as names, which is the accepted false positive from Phase 1.
+- **Clustering** is written with numpy (PCA, seeded k-means++, silhouette), not scikit-learn, to keep the API small for the 512 MB free tier. Two changes from the plan, both from testing on the real sample:
+  - k runs from **3** to 5, not 2 to 5. The pulse needs a top 3, and k = 2 always won with a weak silhouette (about 0.12) that only split praise from complaints.
+  - Reviews under **8 words** ("nice app") are counted but not clustered; they carry no theme.
+- **A run works only on the reviews its own ingest stored** (their ids are recorded in the stage log), never "every review in the window", and ingest never deletes rows. Another CSV or an older run can't leak in, and older runs' themes keep their provenance.
+- **Code owns every fact in the pulse:** counts, the window, quotes and the fee line are written by code; the model writes the summary, one line per theme and the 3 action ideas.
+- **Fee detector** separates mutual fund fees (exit load, expense ratio and Direct vs Regular plans, stamp duty, STT), which the corpus can explain, from INDMoney's own charges (brokerage, currency conversion, other or hidden charges), which it can't. Only a mutual fund fee gets an explainer; the others are reported as observations.
+- **Fee explainer** passages: factsheets are excluded (mostly performance tables), and no source supplies more than 3 of the 6 passages, so two sources are always available to cite.
+- **Real run** (one `POST /weekly/run`, no manual step): 1,069 reviews in the 12-week window, 234 exact and 76 near duplicates removed, 759 stored, 445 clustered into 4 themes. Top 3: deposit and transaction friction (183), app crashes and verification failures (97), limited investment products (89). 3 verbatim quotes picked by the model. Explainer: 4 bullets from the SEBI FAQ and HDFC's TER file. Pulse 244 words. Ended at "awaiting approval" with 3 pending actions (doc append, email draft, promote canonical) in about 90 seconds.
+- **Exit load hypothesis: rejected.** No review in the window mentions exit load. The only mutual fund fee issue is **Direct vs Regular plans** (the app selling Regular plans, i.e. distributor commission): 3 reviews after deduplication. Charge complaints are mostly about INDMoney's own pricing: other or hidden charges (16), brokerage (12), currency conversion for US investing (3).
+- **Tests:** 36 unit tests and 6 database tests for the weekly loop, plus 2 live tests (3 real runs each) for the pulse and explainer caps.
 
 ### Exit check
 - One trigger runs the full loop on the real CSV to "awaiting approval" with no manual step.

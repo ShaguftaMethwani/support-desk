@@ -221,6 +221,7 @@ flowchart LR
 2. Pass every row through the **ingress guard**, which redacts PII before the row is written to the database.
 3. Drop rows outside the configured window, for example the last 10 weeks. Record the window start and end on the run.
 4. Deduplicate by text similarity, and store the result in the `review` table.
+5. The stored ids become the run's review set. Later stages use exactly these ids, never "every review in the window", so another CSV or an older run can't leak in. Ingest never deletes rows, so older runs' themes keep their provenance.
 
 ---
 
@@ -545,6 +546,8 @@ flowchart TB
 - **Resume after restart.** On startup, the app looks for runs left `in_progress` and resumes each from its last finished stage. A free-tier restart in the middle of a run doesn't need a manual re-trigger.
 - **Quotes are verbatim.** The system copies them from the stored reviews by id. A check confirms each quote is a substring of its review's text. The model chooses quotes but never writes them.
 - **Theme provenance.** Every theme row stores `review_ids`, `question_ids`, `count` and the run's window.
+- **Clustering choices.** PCA, k-means++ and the silhouette score are written with numpy, not scikit-learn, to keep the API within the 512 MB free tier. KMeans tries k = 3 to 5, because the pulse needs a top 3 and k = 2 only split praise from complaints on the real sample. Reviews under 8 words are counted but not clustered.
+- **Code owns the facts in the pulse.** Counts, the window, quotes and the fee line are written by code. The model writes the summary, one line per theme and the 3 action ideas.
 
 ### 8.2 Fee confusion detector
 
@@ -555,10 +558,15 @@ flowchart TB
 
 The expected outcome for INDMoney is **exit load on early redemption**. The detector confirms or rejects that from the data.
 
+Fee types come in two kinds. **Mutual fund fees** (exit load, expense ratio and Direct vs Regular plans, stamp duty, STT) are covered by the corpus and can get an explainer. **Platform charges** (brokerage, currency conversion, other or hidden charges) are INDMoney's own pricing, which the corpus does not cover: they are counted and reported in the pulse, but never get an explainer. Generic words like "deducted" or "less amount" count as exit load only when the same review talks about redeeming a mutual fund.
+
+**Result on the November 2026 sample:** the exit load hypothesis is rejected. No review mentions exit load. The mutual fund fee issue is Direct vs Regular plans (3 reviews), while most charge complaints are about brokerage and other platform charges.
+
 ### 8.3 Fee explainer
 
 - Retrieved through the Facts Agent's retriever, filtered to fee documents across all 5 schemes and the AMFI and SEBI explainers.
 - The output holds 6 bullets at most, 2 source links and a `Last checked` date, all checked by validators.
+- Factsheets are left out of its search (their chunks are mostly performance tables), and no source supplies more than 3 of the 6 passages, so two sources are always available to cite. Every bullet cites a passage, and its numbers must appear in that passage.
 - After the weekly actions, it can become a **canonical explainer** through its own approval (see section 9).
 
 ---

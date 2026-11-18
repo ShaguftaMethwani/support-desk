@@ -1,12 +1,14 @@
+import asyncio
 import re
 import uuid
-from collections.abc import Awaitable, Callable
+from collections.abc import AsyncIterator, Awaitable, Callable
+from contextlib import asynccontextmanager
 
 import structlog
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import health
+from app.api import health, weekly
 from app.config import Settings, get_settings
 from app.guard.log_filter import install_log_redaction
 from app.observability import configure_logging, get_logger
@@ -21,7 +23,16 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     configure_logging(settings.log_level, settings.log_json)
     install_log_redaction()
 
-    app = FastAPI(title="The Support Desk", version="0.1.0")
+    @asynccontextmanager
+    async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+        resume: asyncio.Task[None] | None = None
+        if settings.weekly_resume_on_startup:
+            resume = asyncio.create_task(_resume_weekly_runs())
+        yield
+        if resume is not None and not resume.done():
+            resume.cancel()
+
+    app = FastAPI(title="The Support Desk", version="0.1.0", lifespan=lifespan)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origins,
@@ -48,7 +59,20 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         return response
 
     app.include_router(health.router)
+    app.include_router(weekly.router)
     return app
+
+
+async def _resume_weekly_runs() -> None:
+    """Resume weekly runs a restart interrupted. Never stops the API from starting."""
+    from app.weekly.runner import get_weekly_runner
+
+    try:
+        resumed = await get_weekly_runner().resume_interrupted()
+        if resumed:
+            log.info("weekly_runs_resumed", count=len(resumed))
+    except Exception:  # noqa: BLE001 - e.g. database not reachable yet
+        log.exception("weekly_resume_failed")
 
 
 app = create_app()

@@ -28,7 +28,9 @@ def _no_pii_in_logs(request: pytest.FixtureRequest) -> Iterator[None]:
 @pytest.fixture
 def settings() -> Settings:
     """Settings for unit tests: ignores the developer's .env file."""
-    return Settings(_env_file=None, groq_api_key="test-key", log_json=False)  # type: ignore[call-arg]
+    return Settings(  # type: ignore[call-arg]
+        _env_file=None, groq_api_key="test-key", log_json=False, weekly_resume_on_startup=False
+    )
 
 
 class FakeClock:

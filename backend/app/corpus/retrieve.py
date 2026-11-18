@@ -13,9 +13,11 @@ the right chunk down. Vector-first scored 100% for every boost size tested (0 to
 Filters:
 - scheme: when known, only chunks for that scheme or general chunks.
 - platform pages (INDMoney help) are excluded unless the question is about the app itself.
+- doc_types: optionally, only these document types.
 Every search returns a SearchTrace, so a "not covered" answer can say what was searched.
 """
 
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any
@@ -66,6 +68,7 @@ class SearchTrace:
 _FILTER = """
     (CAST(:scheme AS text) IS NULL OR c.scheme = :scheme OR c.scheme = :general)
     AND (CAST(:include_platform AS boolean) OR s.doc_type <> 'platform_process')
+    AND (CAST(:doc_types AS text[]) IS NULL OR s.doc_type = ANY(CAST(:doc_types AS text[])))
 """
 
 # The query's words are ORed: questions rarely contain every word of the answer.
@@ -124,7 +127,10 @@ class Retriever:
         scheme: str | None = None,
         include_platform: bool = False,
         k: int = 4,
+        doc_types: Sequence[str] | None = None,
     ) -> tuple[list[RetrievedChunk], SearchTrace]:
+        """`doc_types`, when given, limits the search to those document types (for example
+        the fee documents for the weekly fee explainer)."""
         params = {
             "q": query,
             "qvec": _vector_literal(self._embedder.embed_query(query)),
@@ -132,6 +138,7 @@ class Retriever:
             "general": GENERAL,
             "include_platform": include_platform,
             "limit": CANDIDATES,
+            "doc_types": list(doc_types) if doc_types is not None else None,
         }
         rows = (await self._session.execute(_SEARCH_SQL, params)).all()
         ranked = sorted(rows, key=lambda r: -score(float(r.similarity), r.text_rank))[:k]
