@@ -12,6 +12,7 @@ answer into a reply, and never writes URLs. Code attaches the citation and Last 
 - unclear: one clarifying question (template).
 """
 
+import uuid
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, replace
 from datetime import date
@@ -64,6 +65,7 @@ class Draft:
     routing: RoutingNote
     model_written: bool  # the model wrote the body (only these get rework and the judge)
     fallback_used: bool = False  # the model's wording was rejected by code checks
+    canonical_id: uuid.UUID | None = None  # the canonical explainer the body came from
 
     @property
     def last_checked(self) -> date | None:

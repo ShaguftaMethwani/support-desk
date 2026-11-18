@@ -69,6 +69,7 @@ def draft_view(d: DraftVersion | None) -> dict[str, Any] | None:
         "citation": d.citation,
         "last_checked": d.last_checked.isoformat() if d.last_checked else None,
         "source_type": d.source_type,
+        "canonical_explainer_id": str(d.canonical_id) if d.canonical_id else None,
         "routing": d.routing,
         "author": d.author,
         "model_tag": d.model_tag,

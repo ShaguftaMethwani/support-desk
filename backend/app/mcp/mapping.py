@@ -34,6 +34,15 @@ def weekly_doc_text(payload: dict[str, Any]) -> list[str]:
         lines.append(
             f"- {t['label']} ({t['count']} reviews): {t.get('description') or ''}".rstrip(": ")
         )
+    support = payload.get("support_queue") or []
+    if support:
+        lines += ["", "From the support queue (similar customer questions):"]
+        for t in support:
+            w = t.get("window") or {}
+            lines.append(
+                f"- {t['label']} ({t['count']} questions, {w.get('start')} to {w.get('end')})"
+            )
+            lines.append(f"  Queue items: {', '.join(t.get('question_ids') or [])}")
     lines += [
         "",
         "Weekly pulse:",
@@ -64,6 +73,8 @@ def queue_doc_text(payload: dict[str, Any]) -> list[str]:
             f"Citation: {citation.get('title') or citation.get('source_key')} — "
             f"{citation.get('url')}"
         )
+    if payload.get("canonical_explainer_id"):
+        lines.append(f"Canonical answer: explainer {payload['canonical_explainer_id']}")
     if routing:
         lines.append(
             f"Routing: {routing.get('team')}, {routing.get('priority')} — {routing.get('reason')}"

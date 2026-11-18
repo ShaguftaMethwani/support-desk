@@ -154,6 +154,10 @@ class Theme(Base):
     review_ids: Mapped[list[Any]] = _json_list()
     question_ids: Mapped[list[Any]] = _json_list()
     from_support_queue: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+    # For a support-queue theme: the surfaced question cluster it reports.
+    cluster_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("question_cluster.id", ondelete="SET NULL"), index=True
+    )
 
 
 class Pulse(Base):
@@ -181,6 +185,8 @@ class FeeExplainer(Base):
     source_urls: Mapped[list[Any]] = _json_list()
     last_checked: Mapped[date] = mapped_column(Date)
     evidence_review_ids: Mapped[list[Any]] = _json_list()
+    # The corpus chunk each bullet came from, in bullet order (empty for runs before Phase 6).
+    chunk_ids: Mapped[list[Any]] = _json_list()
     created_at: Mapped[datetime] = _created_at()
 
 
@@ -194,6 +200,10 @@ class CanonicalExplainer(Base):
     approved_at: Mapped[datetime] = _created_at()
     approved_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("app_user.id"))
     active: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
+    archived_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # The corpus chunk behind each of the explainer's bullets, so a reply can cite it.
+    bullet_chunk_ids: Mapped[list[Any]] = _json_list()
+    # Queue items whose reply was built from this explainer.
     reuse_count: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
 
 
@@ -258,6 +268,10 @@ class DraftVersion(Base):
     last_checked: Mapped[date | None] = mapped_column(Date)
     # corpus | canonical_explainer | refusal | not_covered | clarification
     source_type: Mapped[str] = mapped_column(String(24))
+    # Set when source_type is canonical_explainer: the explainer the reply was built from.
+    canonical_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("canonical_explainer.id", ondelete="SET NULL")
+    )
     routing: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
     author: Mapped[str] = mapped_column(String(8))  # system | human
     author_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("app_user.id"))

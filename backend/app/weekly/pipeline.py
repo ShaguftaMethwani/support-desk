@@ -7,10 +7,13 @@ Every stage can be re-run safely: it replaces whatever an interrupted attempt le
     ingest     load the CSV, guard, window, dedupe, store reviews with embeddings
     cluster    PCA + KMeans over the window's reviews; one theme row per cluster
     label      the small model names each theme; themes ranked by count
+    queue      each surfaced support-queue cluster (5+ similar questions in 7 days) becomes a
+               "from support queue" theme with its question ids, count and window
     quotes     the model picks 3 review ids; code copies and verifies the text
     fees       fee lexicon detector (code only)
     explainer  fee explainer from the corpus, if a mutual fund fee issue was found
-    pulse      the weekly pulse, at most 250 words with 3 action ideas
+    pulse      the weekly pulse, at most 250 words with 3 action ideas; it must list every
+               support-queue theme, or the run fails
     actions    pending doc append, email draft and (with an explainer) promote_canonical
 
 Validation runs inside the explainer and pulse stages: one regeneration with the named
@@ -29,6 +32,7 @@ from sqlalchemy import delete, select, text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.config import Settings
+from app.connector.clusters import surfaced_for_run
 from app.corpus.embed import Embedder
 from app.db.models import FeeExplainer, PendingAction, Pulse, Review, Theme, WeeklyRun
 from app.gate.actions import new_pending_action
@@ -44,6 +48,7 @@ from app.weekly.generate import (
     PulseTheme,
     Quote,
     Retriever,
+    SupportTheme,
     check_explainer,
     check_pulse,
     explainer_context,
@@ -60,7 +65,9 @@ from app.weekly.reviews import ingest_reviews, load_csv
 
 log = get_logger(__name__)
 
-STAGES = ("ingest", "cluster", "label", "quotes", "fees", "explainer", "pulse", "actions")
+STAGES = (
+    "ingest", "cluster", "label", "queue", "quotes", "fees", "explainer", "pulse", "actions",
+)  # fmt: skip
 TOP_THEMES = 3
 ACTIVE_STATUSES = ("pending", "in_progress")
 _WORD = re.compile(r"\w+")
@@ -190,8 +197,24 @@ async def _run_reviews(s: AsyncSession, run: WeeklyRun) -> list[Review]:
 
 
 async def _themes(s: AsyncSession, run: WeeklyRun) -> list[Theme]:
-    rows = await s.scalars(select(Theme).where(Theme.run_id == run.id))
+    """The run's review themes, best first (support-queue themes are separate)."""
+    rows = await s.scalars(
+        select(Theme).where(Theme.run_id == run.id, Theme.from_support_queue.is_(False))
+    )
     return sorted(rows.all(), key=lambda t: (t.rank or 99, -t.count, str(t.id)))
+
+
+def support_themes(run: WeeklyRun) -> list[dict[str, Any]]:
+    """The queue stage's support-queue themes: label, count, window, question and theme ids."""
+    return list(((run.stage_log or {}).get("queue") or {}).get("themes", []))
+
+
+def _support_inputs(run: WeeklyRun) -> list[SupportTheme]:
+    return [
+        SupportTheme(t["label"], t["count"], date.fromisoformat(t["window"]["start"]),
+                     date.fromisoformat(t["window"]["end"]))
+        for t in support_themes(run)
+    ]  # fmt: skip
 
 
 async def stage_ingest(s: AsyncSession, run: WeeklyRun, deps: WeeklyDeps) -> dict[str, Any]:
@@ -264,6 +287,41 @@ async def stage_label(s: AsyncSession, run: WeeklyRun, deps: WeeklyDeps) -> dict
     return {"themes": labelled}
 
 
+async def stage_queue(s: AsyncSession, run: WeeklyRun, deps: WeeklyDeps) -> dict[str, Any]:
+    """Surfaced support-queue clusters into this run, as themes (architecture section 9.1)."""
+    await s.execute(delete(Theme).where(Theme.run_id == run.id, Theme.from_support_queue.is_(True)))
+    clusters = await surfaced_for_run(
+        s, run_id=run.id, window_start=run.window_start, window_end=run.window_end
+    )
+    reported = []
+    for cluster in clusters:
+        ids = [str(i.id) for i in cluster.items]
+        start, end = cluster.window
+        examples = [i.text_redacted for i in cluster.items]
+
+        def check(label: Any, ids: list[str] = ids, start: date = start, end: date = end) -> Any:
+            artifact = ThemeArtifact(label.label, len(ids), (), tuple(ids), start, end)
+            return run_policy(artifact, PolicyContext.from_settings(deps.settings))
+
+        async def make(feedback: str | None, examples: list[str] = examples) -> Any:
+            return await label_theme(deps.llm, examples, feedback, questions=True)
+
+        result = await generate_validated("support theme label", make, check)
+        label = result.value
+        theme = Theme(run_id=run.id, label=label.label, description=label.description,
+                      count=len(ids), question_ids=ids, from_support_queue=True,
+                      cluster_id=cluster.cluster_id)  # fmt: skip
+        s.add(theme)
+        await s.flush()
+        reported.append({
+            "theme_id": str(theme.id), "cluster_id": str(cluster.cluster_id),
+            "label": label.label, "count": len(ids),
+            "window": {"start": start.isoformat(), "end": end.isoformat()},
+            "question_ids": ids, **result.log(),
+        })  # fmt: skip
+    return {"themes": reported}
+
+
 async def _review_texts(s: AsyncSession, ids: list[str]) -> dict[str, str]:
     if not ids:
         return {}
@@ -320,7 +378,8 @@ async def stage_explainer(s: AsyncSession, run: WeeklyRun, deps: WeeklyDeps) -> 
     assert draft.last_checked is not None  # the policy engine requires it
     s.add(FeeExplainer(run_id=run.id, fee_type=fee.key, bullets=list(draft.bullets),
                        source_urls=list(draft.source_urls), last_checked=draft.last_checked,
-                       evidence_review_ids=fees["evidence_review_ids"]))  # fmt: skip
+                       evidence_review_ids=fees["evidence_review_ids"],
+                       chunk_ids=list(draft.chunk_ids)))  # fmt: skip
     return {
         "fee_type": fee.key,
         **result.log(),
@@ -354,13 +413,17 @@ async def stage_pulse(s: AsyncSession, run: WeeklyRun, deps: WeeklyDeps) -> dict
         quotes=[(q.text, label) for q, label in zip(quotes, labels, strict=True)],
         fees=_detection(run.stage_log["fees"]),
         explainer_attached=explainer is not None,
+        support_themes=_support_inputs(run),
     )
     ctx = PolicyContext.from_settings(deps.settings, today=deps.now().date())
 
     async def make(feedback: str | None) -> str:
         return await write_pulse(deps.llm, inp, feedback)
 
-    result = await generate_validated("weekly pulse", make, lambda t: check_pulse(t, ctx))
+    def check(text: str) -> Any:
+        return check_pulse(text, ctx, inp.support_themes)
+
+    result = await generate_validated("weekly pulse", make, check)
     pulse_text = result.value
     await s.execute(delete(Pulse).where(Pulse.run_id == run.id))
     words = count_words(pulse_text)
@@ -413,6 +476,15 @@ def build_payloads(
         "top_themes": [
             {"label": t.label, "description": t.description, "count": t.count} for t in top
         ],  # fmt: skip
+        "support_queue": [
+            {
+                "label": t["label"],
+                "count": t["count"],
+                "window": t["window"],
+                "question_ids": t["question_ids"],
+            }
+            for t in support_themes(run)
+        ],  # fmt: skip
         "weekly_pulse": pulse.text_redacted,
         "identified_fee_issue": fee_issue,
         "explanation_bullets": bullets,
@@ -446,6 +518,7 @@ _STAGE_FUNCS: dict[str, StageFunc] = {
     "ingest": stage_ingest,
     "cluster": stage_cluster,
     "label": stage_label,
+    "queue": stage_queue,
     "quotes": stage_quotes,
     "fees": stage_fees,
     "explainer": stage_explainer,

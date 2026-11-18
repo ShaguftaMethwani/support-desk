@@ -107,6 +107,16 @@ class Settings(BaseSettings):
     recurring_min: int = 5  # similar items in the window
     rising_min: int = 3  # this week's items, and at least double the previous week's
     question_cluster_similarity: float = 0.85
+    # Canonical explainers (architecture section 9.2): question to explainer, cosine (bge-small,
+    # measured on the November 2026 expense ratio explainer). Related questions score 0.52 to
+    # 0.81; unrelated ones without a scheme at most 0.57. Paraphrases such as "why is my
+    # regular plan charging more" score low, but they name the fee type, so they match on that.
+    # A fee_canonical question naming no fee type uses the nearest explainer from this:
+    canonical_fee_similarity: float = 0.68
+    # a factual question or complaint (no scheme, no fee type named) needs this,
+    canonical_similarity: float = 0.82
+    # or this when it names the explainer's fee type.
+    canonical_fee_type_similarity: float = 0.55
     # Weekly loop (architecture section 8).
     reviews_csv_path: Path = REPO_ROOT / "data" / "reviews_sample.csv"
     weekly_window_weeks: int = 12  # the review sample covers the last 12 weeks

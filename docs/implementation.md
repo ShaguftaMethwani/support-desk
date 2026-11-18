@@ -368,16 +368,34 @@ The Google Docs and Gmail MCP server built earlier is reused as-is. No new MCP s
 **Goal:** the link between the two loops. This is the core new work, so it must be demonstrable.
 
 ### Tasks (`backend/app/connector/`)
-- [ ] **Surfacing.** Builds on the rolling question clusters from Phase 4. Mark a cluster `surfaced` when it has 5 or more items within 7 days.
-- [ ] **Into the weekly loop.** The weekly pipeline loads surfaced clusters and must include each one as a theme or as the key observation, with count, window and queue item ids. Add a validator check that no surfaced cluster is missing from the pulse.
-- [ ] **Canonical explainers.** Executing an approved `promote_canonical` action writes a `canonical_explainer` row. A newer one for the same fee type deactivates the old one.
-- [ ] **Into the response loop.** Complete the orchestrator's canonical path from Phase 4. On a `fee_canonical` intent, or when a question is close to a canonical explainer's embedding, build the reply from 1–3 of its bullets. Keep its citation and set `source_type = canonical_explainer`.
-- [ ] **Reuse counter** on each canonical explainer, for the frontend view.
+- [x] **Surfacing.** Builds on the rolling question clusters from Phase 4. Mark a cluster `surfaced` when it has 5 or more items within 7 days.
+- [x] **Into the weekly loop.** The weekly pipeline loads surfaced clusters and must include each one as a theme or as the key observation, with count, window and queue item ids. Add a validator check that no surfaced cluster is missing from the pulse.
+- [x] **Canonical explainers.** Executing an approved `promote_canonical` action writes a `canonical_explainer` row. A newer one for the same fee type deactivates the old one.
+- [x] **Into the response loop.** Complete the orchestrator's canonical path from Phase 4. On a `fee_canonical` intent, or when a question is close to a canonical explainer's embedding, build the reply from 1–3 of its bullets. Keep its citation and set `source_type = canonical_explainer`.
+- [x] **Reuse counter** on each canonical explainer, for the frontend view.
 
 ### Tests
-- [ ] Seed 5 similar questions within 7 days, run the weekly loop, and check the cluster appears in the pulse with its count and window.
-- [ ] Approve the `promote_canonical` action, ask a related question, and check the reply uses the explainer.
-- [ ] Approve a newer explainer and check the old one is no longer used.
+- [x] Seed 5 similar questions within 7 days, run the weekly loop, and check the cluster appears in the pulse with its count and window.
+- [x] Approve the `promote_canonical` action, ask a related question, and check the reply uses the explainer.
+- [x] Approve a newer explainer and check the old one is no longer used.
+
+### Status (November 2026)
+- **Surfacing** (`connector/clusters.py`): checked each time a queue item joins a cluster; at 5 items created in the last 7 days the cluster is marked `surfaced`, and stays so.
+- **Into the weekly loop:** a new `queue` stage (after `label`) turns each surfaced cluster into a theme row with `from_support_queue`, its question ids, count and first-to-last window, named by the small model from the questions. The review themes and their top 3 are unchanged. The pulse lists each cluster in a "From the support queue" section written by code, and the pulse check `support_queue_reported` fails the run if one is missing. The doc entry lists them with their queue item ids. A cluster is reported by the first run after it surfaced, and again only while it is still active.
+- **Canonical explainers:** promotion now links each bullet to its corpus chunk, so a reply can cite it. Explainers from Phase 6 store the chunk ids when they are written; older ones are matched to the nearest chunk of their two sources that holds every figure in the bullet. The archived explainer gets `archived_at`.
+- **Into the response loop** (`connector/canonical.py`, `orchestrator/desk.py`): the lookup runs after classification. When it finds an explainer, the Facts Agent is skipped, and code builds the reply from the 1–3 nearest bullets of one source, citing that source's chunk. The draft has `source_type = canonical_explainer` and `canonical_id`; routing says "Answered with the approved canonical explainer" and still escalates when Pattern says recurring. A refinement looks the explainer up again, so a replaced explainer is never reused.
+- **Reuse counter:** one per queue item, so refinements and edits don't count twice. `GET /explainers/canonical` lists the explainers with their reuse counts.
+- **Migration** `0003`: `theme.cluster_id`, `fee_explainer.chunk_ids`, `canonical_explainer.archived_at` and `bullet_chunk_ids`, `draft_version.canonical_id`.
+- **Pulse length:** the support-queue section exposed that the pulse was already close to 250 words, mostly from code-written lines (the three quotes alone took about 95). When the composed pulse is over the cap, code now shortens it in order: the model's summary to its first sentence, then without it, then each quote to its opening words ending in "…" (still a verbatim excerpt). Counts, themes, support-queue clusters, fee lines and action ideas are never cut.
+- **Thresholds,** calibrated with bge-small on the real expense ratio explainer: related questions score 0.52 to 0.81, unrelated ones without a scheme at most 0.57. Paraphrases score low but name the fee type, so they match on that. A question naming a fee type only ever uses that fee type's explainer.
+- **Tests:** 8 unit tests (the pulse section and its check, routing, doc entries) and 9 database tests (surfacing, the weekly run reporting a cluster once, promotion, reuse, a scheme question still using its documents, replacement, the API). Database tests that promote an explainer restore the developer's active ones afterwards.
+
+- **Exit check (18 November 2026),** on real data with the real models:
+  - **Weekly loop to response loop.** The Phase 5 run's `promote_canonical` was approved, making "Expense ratio and Direct vs Regular plans" canonical. Each of its 4 bullets was matched to the right chunk: the definitions to the SEBI FAQ, the HDFC Liquid Fund TER figures to the HDFC TER sheet. "Why is my regular plan charging more than the direct plan?" was then classified `fee_canonical` (fee type `expense_ratio`). It was answered with the two TER bullets, verbatim and cited to the TER sheet; the draft passed review.
+  - **Response loop to weekly loop.** Four more questions like it joined the same cluster, which surfaced on the fifth. All 5 were answered from the explainer (reuse count 5). Weekly run `cb14acc1` reported the cluster as "Regular vs Direct plan fees (5 questions, 18 Nov to 18 Nov)", with the 5 queue item ids in the theme and in the doc append payload. The pulse came in at 250 words.
+  - **Failed runs on the way.** Two earlier runs failed on the pulse length cap, which led to the pulse fix above. A third issue was hidden behind the length failure: the returns guard flagged an action idea ("fixed income options") as promised returns. It was fixed by the one regeneration, and the guard was not changed.
+  - **Still pending:** run `cb14acc1`'s doc append, email draft and `promote_canonical`.
+  - **Demo script:** [demo_script.md](demo_script.md).
 
 ### Exit check
 - Both directions work end to end on real data, and the steps are written down as a demo script for Phase 11.

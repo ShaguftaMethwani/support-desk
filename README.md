@@ -97,6 +97,19 @@ curl -X POST localhost:8000/actions/<id>/reject
 curl -X POST localhost:8000/actions/<id>/retry          # a failed action, under its approval
 ```
 
+## Loop connector
+
+The two loops feed each other (architecture section 9):
+
+- **Support questions into the pulse.** When 5 similar questions arrive within 7 days, their cluster is surfaced. The next weekly run lists it in the pulse under "From the support queue", with its count, window and queue item ids.
+- **Fee explainers into replies.** Approving a weekly run's `promote_canonical` action makes its fee explainer the canonical answer. Related questions are then answered with its bullets, word for word (`source_type = canonical_explainer`).
+
+```bash
+curl localhost:8000/explainers/canonical                 # active explainers and reuse counts
+```
+
+A step-by-step demo is in [docs/demo_script.md](docs/demo_script.md).
+
 ## Weekly loop
 
 ```bash

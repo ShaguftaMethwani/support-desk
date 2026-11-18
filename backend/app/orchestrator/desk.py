@@ -2,8 +2,9 @@
 
 intake_message   guard -> splitter -> one message row and one queue item per part, each with
                  its embedding and rolling question cluster
-process_item     classify -> run the agents the route needs, in parallel (one agent_run row
-                 each, with start and finish times) -> draft -> review (one rework) -> store
+process_item     classify -> canonical explainer lookup -> run the agents the route needs, in
+                 parallel (one agent_run row each, with start and finish times) -> draft ->
+                 review (one rework) -> store
 refine_item      re-run only the agents the feedback affects, reuse the others' last outputs
 edit_draft       a human's text, guarded, as a new version, re-validated
 approve_item     only a passed draft; creates its doc append and email draft pending actions
@@ -28,6 +29,7 @@ from app.agents.compliance import ComplianceResult, run_compliance
 from app.agents.facts import FactsAgent, FactsResult, SourceCitation
 from app.agents.pattern import PatternResult, PatternSettings, run_pattern
 from app.config import Settings
+from app.connector.canonical import CanonicalAnswer, canonical_for_question, count_reuse
 from app.connector.clusters import assign_cluster
 from app.corpus.embed import Embedder
 from app.corpus.schemes import BY_SLUG
@@ -246,14 +248,39 @@ class Results:
     facts: FactsResult | None = None
     pattern: PatternResult | None = None
     compliance: ComplianceResult | None = None
+    canonical: CanonicalAnswer | None = None  # an approved explainer that answers the question
 
 
-def _results(outcomes: dict[str, AgentOutcome]) -> Results:
-    r = Results()
+def _results(outcomes: dict[str, AgentOutcome], canonical: CanonicalAnswer | None) -> Results:
+    r = Results(canonical=canonical)
     for name, o in outcomes.items():
         if o.output is not None:
             setattr(r, name, o.output)
     return r
+
+
+async def find_canonical_answer(
+    deps: DeskDeps, s: AsyncSession, item: QueueItem, cls: Classification
+) -> CanonicalAnswer | None:
+    """The canonical explainer reply for this item, if one applies (architecture 9.2)."""
+    if item.embedding is None:
+        return None
+    return await canonical_for_question(
+        s,
+        deps.embedder,
+        embedding=list(item.embedding),
+        intent=cls.intent,
+        scheme=cls.scheme,
+        fee_type=cls.fee_type,
+        settings=deps.settings,
+    )
+
+
+def agents_for(cls: Classification, canonical: CanonicalAnswer | None) -> list[str]:
+    """Facts is skipped for refusals and clarifications, and when a canonical explainer
+    answers the question (route table in architecture section 7.3)."""
+    skip_facts = cls.intent in NO_FACTS_INTENTS or canonical is not None
+    return [a for a in AGENTS if not (a == "facts" and skip_facts)]
 
 
 async def build_draft(
@@ -266,11 +293,13 @@ async def build_draft(
     feedback: str | None = None,
     rework: str | None = None,
 ) -> Draft:
+    canonical = results.canonical
     routing = route(
         facts=results.facts,
         pattern=results.pattern,
         compliance=results.compliance,
         fee_type=cls.fee_type,
+        canonical=canonical is not None and cls.intent not in NO_FACTS_INTENTS,
     )
     if cls.intent in ("advice", "returns"):
         source = await refusal_source(deps.retriever_for(s), question, cls.intent, cls.scheme)
@@ -278,6 +307,16 @@ async def build_draft(
         return Draft(body, SourceType.REFUSAL, source, routing, model_written=False)
     if cls.intent == "unclear":
         return Draft(clarification(cls.scheme), SourceType.CLARIFICATION, None, routing, False)
+    if canonical is not None:
+        # Code builds the reply from the explainer's own bullets; no model rewrites it.
+        return Draft(
+            canonical.body,
+            SourceType.CANONICAL_EXPLAINER,
+            canonical.citation,
+            routing,
+            model_written=False,
+            canonical_id=canonical.canonical_id,
+        )
     facts = results.facts
     if facts is None or facts.status != "answered" or facts.answer is None:
         body = COMPLAINT_NOT_COVERED if cls.intent == "complaint" else NOT_COVERED
@@ -291,8 +330,7 @@ async def build_draft(
         feedback=feedback,
         rework=rework,
     )
-    # fee_canonical: the canonical explainer path comes in Phase 6; until then it is answered
-    # from the corpus like any factual question.
+    # A fee_canonical question with no canonical explainer is answered from the corpus.
     return Draft(
         body, SourceType.CORPUS, facts.citation, routing, model_written=True, fallback_used=fallback
     )
@@ -368,6 +406,15 @@ async def store_review(
     author_id: uuid.UUID | None = None,
 ) -> DraftVersion:
     version = await _next_version(s, item.id)
+    used_before = set(
+        (
+            await s.scalars(
+                select(DraftVersion.canonical_id).where(
+                    DraftVersion.item_id == item.id, DraftVersion.canonical_id.is_not(None)
+                )
+            )
+        ).all()
+    )
     final: DraftVersion | None = None
     for attempt, (draft, results) in enumerate(reviewed.drafts, start=1):
         last = attempt == len(reviewed.drafts)
@@ -378,6 +425,7 @@ async def store_review(
             citation=draft.citation.model_dump(mode="json") if draft.citation else None,
             last_checked=draft.last_checked,
             source_type=draft.source_type.value,
+            canonical_id=draft.canonical_id,
             routing=draft.routing.model_dump(mode="json"),
             author=author,
             author_id=author_id,
@@ -399,6 +447,9 @@ async def store_review(
         version += 1
         final = row
     assert final is not None
+    # Reuse counts queue items, so a refined or edited draft doesn't count twice.
+    if final.canonical_id is not None and final.canonical_id not in used_before:
+        await count_reuse(s, final.canonical_id)
     item.status = "awaiting_human" if reviewed.status == "passed" else "blocked"
     return final
 
@@ -467,11 +518,11 @@ async def process_item(
             "intent_rule": cls.rule,
         }
         item.status = "drafting"
+        canonical = await find_canonical_answer(deps, s, item, cls)
         await s.commit()
     marks.append(("classify", time.monotonic()))
 
-    agents = [a for a in AGENTS if not (a == "facts" and cls.intent in NO_FACTS_INTENTS)]
-    outcomes = await run_agents(deps, item, cls, agents)
+    outcomes = await run_agents(deps, item, cls, agents_for(cls, canonical))
     marks.append(("agents", time.monotonic()))
 
     async with deps.sessions() as s:
@@ -481,7 +532,11 @@ async def process_item(
             return await _unavailable(s, item, outcomes, cls)
         try:
             reviewed = await draft_and_review(
-                deps, s, question=item.text_redacted, cls=cls, results=_results(outcomes)
+                deps,
+                s,
+                question=item.text_redacted,
+                cls=cls,
+                results=_results(outcomes, canonical),
             )
         except LLMError:
             return await _unavailable(s, item, outcomes, cls)
@@ -644,10 +699,13 @@ async def refine_item(
                     "scheme": new_scheme,
                     "scheme_source": "refinement",
                 }
-        rerun = [
-            a for a in AGENTS_FOR[kind] if not (a == "facts" and cls.intent in NO_FACTS_INTENTS)
-        ]
+        # Looked up again: a newer explainer may have replaced the one the last draft used.
+        canonical = await find_canonical_answer(deps, s, item, cls)
+        allowed = agents_for(cls, canonical)
         cached = await cached_outputs(s, item.id)
+        # Agents with no earlier output also run, e.g. Facts after the canonical explainer
+        # that answered this item was archived with no replacement.
+        rerun = [a for a in allowed if a in AGENTS_FOR[kind] or a not in cached]
         fresh = await run_agents(deps, item, cls, rerun) if rerun else {}
         if any(o.status == "error" for o in fresh.values()):
             raise DeskError(503, "an agent is temporarily unavailable; try again")
@@ -658,7 +716,7 @@ async def refine_item(
                 s,
                 question=item.text_redacted,
                 cls=cls,
-                results=_results(merged),
+                results=_results(merged, canonical),
                 feedback=feedback,
             )
         except LLMError as exc:
@@ -693,6 +751,7 @@ async def edit_draft(
             citation,
             RoutingNote.model_validate(current.routing),
             model_written=False,
+            canonical_id=current.canonical_id,
         )
         results = await review_reply(draft.artifact(), _ctx(deps, draft), llm=None, use_judge=False)
         status = "passed" if not failures(results) else "blocked"
@@ -722,6 +781,8 @@ async def approve_item(deps: DeskDeps, item_id: uuid.UUID, *, user_id: uuid.UUID
             "routing": draft.routing,
             "draft_version": draft.version,
         }
+        if draft.canonical_id is not None:
+            doc["canonical_explainer_id"] = str(draft.canonical_id)
         email = {
             "subject": f"Reply to customer question — {today}",
             "body": draft.reply_redacted,

@@ -5,14 +5,15 @@
 | Pattern rising                             | product              | P1       |
 | Pattern recurring, fee related             | support_l2_payments  | P2       |
 | Pattern recurring, not fee related         | product              | P2       |
-| Facts not covered                          | support_l2_payments  | P2       |
+| Facts not covered (no canonical explainer) | support_l2_payments  | P2       |
 | Otherwise                                  | support_l1           | P3       |
 
 The "recurring, not fee related" row is an addition to the architecture's table: without it a
 recurring product problem (11 reviews about the app crashing) fell through to "not covered"
 and went to payments support.
 
-Disagreement rule: when Facts answered but Pattern says recurring or rising, the note states
+Disagreement rule: when Facts (or a canonical explainer) answered but Pattern says recurring or
+rising, the note states
 the disagreement and the item is "reply and escalate" instead of "reply and close".
 """
 
@@ -56,7 +57,10 @@ def route(
     pattern: PatternResult | None,
     compliance: ComplianceResult | None,
     fee_type: str | None,
+    canonical: bool = False,
 ) -> RoutingNote:
+    """`canonical` is True when the reply is built from a canonical explainer: it then counts
+    as answered, like a Facts answer."""
     team: Team
     priority: Priority
     if compliance is not None and compliance.risk_level == "high":
@@ -72,16 +76,20 @@ def route(
         team, priority = "product", "P2"
         theme = f" (theme: {pattern.matched_theme_label})" if pattern.matched_theme_label else ""
         reason = f"Recurring issue{theme}: {_evidence(pattern)}"
-    elif facts is not None and facts.status == "not_covered":
+    elif not canonical and facts is not None and facts.status == "not_covered":
         team, priority = "support_l2_payments", "P2"
         reason = "Not covered by the official documents; needs a person to answer"
+    elif canonical:
+        team, priority = "support_l1", "P3"
+        reason = "Answered with the approved canonical explainer"
     else:
         team, priority, reason = "support_l1", "P3", "Answered from the official documents"
 
+    answered = canonical or (facts is not None and facts.status == "answered")
     disagreement = None
-    if (facts is not None and facts.status == "answered" and pattern is not None
-            and pattern.label in ("recurring", "rising")):  # fmt: skip
-        disagreement = (f"Facts answered cleanly, but Pattern marks this {pattern.label}: "
+    if answered and pattern is not None and pattern.label in ("recurring", "rising"):
+        source = "The canonical explainer" if canonical else "Facts"
+        disagreement = (f"{source} answered cleanly, but Pattern marks this {pattern.label}: "
                         f"{_evidence(pattern)}")  # fmt: skip
     action: Literal["reply_and_close", "reply_and_escalate"] = (
         "reply_and_escalate" if disagreement or priority == "P1" else "reply_and_close"

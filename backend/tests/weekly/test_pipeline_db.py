@@ -119,7 +119,13 @@ async def test_full_run_reaches_awaiting_approval(
         assert {r.review_id for r in stored} == set(ingest["review_ids"])
         assert all("ABCDE1234F" not in r.text_redacted for r in stored)
 
-        themes = (await s.scalars(select(Theme).where(Theme.run_id == run_id))).all()
+        # Review themes only: support-queue themes come from whatever questions the shared
+        # database holds (tests/connector covers them).
+        themes = (
+            await s.scalars(
+                select(Theme).where(Theme.run_id == run_id, Theme.from_support_queue.is_(False))
+            )
+        ).all()
         assert run.stage_log["cluster"]["too_short"] == 1  # "nice app"
         ctx = PolicyContext(("sebi.gov.in",), WINDOW_END)
         for t in themes:  # every theme has ids, a count that matches, and the run's window
@@ -188,7 +194,9 @@ async def test_interrupted_run_resumes_from_the_last_finished_stage(
         run = await s.get(WeeklyRun, run_id)
         assert run is not None and run.status == "in_progress"
         done_before = {k: v["finished_at"] for k, v in run.stage_log.items()}
-        assert set(done_before) == {"ingest", "cluster", "label", "quotes", "fees", "explainer"}
+        assert set(done_before) == {
+            "ingest", "cluster", "label", "queue", "quotes", "fees", "explainer",
+        }  # fmt: skip
 
     healthy = make_llm()
     runner = WeeklyRunner(lambda: make_deps(sessions, healthy))

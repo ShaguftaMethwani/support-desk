@@ -600,6 +600,7 @@ flowchart LR
 - Each new queue item is embedded and assigned to a **rolling question cluster** with a similarity threshold.
 - When a cluster reaches **5 or more items within 7 days**, it is marked `surfaced`. The next weekly run must include it as a theme or as the key observation, with its count, window and queue item ids.
 - The pulse view shows these with a "from support queue" tag, so product can see what support is being asked.
+- **Reported once, then while active.** A surfaced cluster is reported by the first weekly run that ends after it surfaced. Later runs report it again only while it is still active (5 new items in the run's last 7 days). The pulse lists each one as `label (N questions, first to last date)`, written by code; a check fails the pulse if any surfaced cluster is missing from it.
 
 ### 9.2 Weekly loop to response loop
 
@@ -608,6 +609,9 @@ flowchart LR
 - On a `fee_canonical` intent, or when a question's embedding is close to a canonical explainer, the orchestrator **builds the reply from the explainer**. It takes the 1–3 most relevant bullets and keeps the explainer's citation.
 - The draft's `source_type` is `canonical_explainer`, and the UI shows a "Canonical answer" badge linking to the explainer.
 - A newer approved explainer for the same fee type replaces the older one, which is archived.
+- **Matching rules.** A question that names a fee type only ever uses that fee type's explainer. A factual question or complaint that names a scheme never uses one: the scheme's own documents answer it. Thresholds are in `config.py`, calibrated on the real explainer.
+- **The reply is the bullets themselves.** Code picks the 1–3 bullets nearest the question, all from one source, and cites the corpus chunk they came from. No model rewords them, so a refinement asking for different wording leaves them unchanged; a person edits the draft instead.
+- **Reuse count.** Each queue item whose reply was built from an explainer adds one, once per item.
 
 ---
 
@@ -734,15 +738,15 @@ erDiagram
 | `corpus_chunk` | id, source_id, text, embedding, scheme, section |
 | `review` | review_id, source, date, rating, text_redacted, pii_flags |
 | `weekly_run` | id, window_start, window_end, status, stage_log, triggered_by |
-| `theme` | id, run_id, label, count, centroid, review_ids[], question_ids[], rank |
+| `theme` | id, run_id, label, count, centroid, review_ids[], question_ids[], rank, from_support_queue, cluster_id (the surfaced question cluster a support-queue theme reports) |
 | `pulse` | id, run_id, text_redacted, word_count, quote_review_ids[] |
-| `fee_explainer` | id, run_id, fee_type, bullets[], source_urls[], last_checked, evidence_review_ids[] |
-| `canonical_explainer` | id, fee_type, explainer_id, embedding, approved_at, active |
+| `fee_explainer` | id, run_id, fee_type, bullets[], source_urls[], last_checked, evidence_review_ids[], chunk_ids[] (the corpus chunk behind each bullet) |
+| `canonical_explainer` | id, fee_type, explainer_id, embedding, approved_at, approved_by, active, archived_at, bullet_chunk_ids[], reuse_count |
 | `chat_session` | id, user_id, last_scheme, advice_refused, created_at, expires_at |
 | `message` | id, session_id, channel (text, voice, csv), text_redacted, pii_flags, split_method (rules, model, single), parts_dropped |
 | `queue_item` | id, message_id, part_index, text_redacted, shared_slots, intent, status, cluster_id |
 | `question_cluster` | id, centroid, first_seen, last_seen, surfaced, surfaced_at. Members are found through `queue_item.cluster_id`. |
-| `draft_version` | id, item_id, version, reply_redacted, citation, last_checked, source_type, routing, author (system or human), author_id, model_tag, review_status |
+| `draft_version` | id, item_id, version, reply_redacted, citation, last_checked, source_type, canonical_id (set for canonical answers), routing, author (system or human), author_id, model_tag, review_status |
 | `agent_run` | id, item_id, draft_version_id (empty until a draft exists), agent, status, output_json, started_at, finished_at, latency_ms |
 | `review_result` | id, draft_version_id, attempt, rule_results[] |
 | `refinement_event` | id, item_id, round, feedback_type, agents_fired[] |
@@ -771,7 +775,7 @@ Every column holding user-originated free text ends in `_redacted`, so the write
 | `POST /weekly/run` | Manual trigger for the weekly loop |
 | `GET /weekly/{run_id}` | Themes, counts, windows, quotes, pulse, explainer, and the run status the cron job polls |
 | `GET /sources` | Corpus sources with last-checked dates, and claims linked to them |
-| `GET /explainers/canonical` | Active canonical explainers |
+| `GET /explainers/canonical` | Active canonical explainers with sources and reuse count (`?include_archived=true` adds replaced ones) |
 | `GET /actions/pending` | Approval screen data |
 | `POST /actions/{id}/approve` | Approves and executes **one** action. Requires `payload_hash`. |
 | `POST /actions/{id}/reject` | Rejects one action |

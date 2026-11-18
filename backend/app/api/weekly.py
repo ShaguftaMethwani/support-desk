@@ -21,7 +21,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import Settings, get_settings
 from app.db.models import FeeExplainer, PendingAction, Pulse, Theme, WeeklyRun
 from app.db.session import get_session
-from app.weekly.pipeline import STAGES, create_run
+from app.weekly.pipeline import STAGES, create_run, support_themes
 from app.weekly.runner import WeeklyRunner, get_weekly_runner
 
 router = APIRouter(prefix="/weekly", tags=["weekly"])
@@ -94,12 +94,14 @@ async def get_run(run_id: uuid.UUID, session: Session) -> dict[str, Any]:
         )
     ).all()
     log = run.stage_log or {}
+    window = {"start": run.window_start.isoformat(), "end": run.window_end.isoformat()}
+    support_windows = {t["theme_id"]: t["window"] for t in support_themes(run)}
     return {
         "run_id": str(run.id),
         "status": run.status,
         "error": run.error,
         "triggered_by": run.triggered_by,
-        "window": {"start": run.window_start.isoformat(), "end": run.window_end.isoformat()},
+        "window": window,
         "started_at": run.started_at.isoformat() if run.started_at else None,
         "finished_at": run.finished_at.isoformat() if run.finished_at else None,
         "stages": {name: (log.get(name) or {}).get("status", "pending") for name in STAGES},
@@ -112,8 +114,11 @@ async def get_run(run_id: uuid.UUID, session: Session) -> dict[str, Any]:
                 "description": t.description,
                 "count": t.count,
                 "review_ids": t.review_ids,
+                "question_ids": t.question_ids,
+                "from_support_queue": t.from_support_queue,
+                "window": support_windows.get(str(t.id), window),
             }
-            for t in sorted(themes, key=lambda t: t.rank or 99)
+            for t in sorted(themes, key=lambda t: (t.from_support_queue, t.rank or 99, -t.count))
         ],  # fmt: skip
         "quotes": (log.get("quotes") or {}).get("quotes", []),
         "fees": log.get("fees"),

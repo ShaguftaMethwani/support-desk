@@ -20,6 +20,7 @@ from datetime import UTC, datetime
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.connector.canonical import bullet_chunk_ids
 from app.corpus.embed import Embedder
 from app.db.models import (
     Approval,
@@ -52,10 +53,15 @@ async def _locked(s: AsyncSession, action_id: uuid.UUID) -> PendingAction:
 
 
 async def promote_canonical(
-    s: AsyncSession, action: PendingAction, approver_id: uuid.UUID, embedder: Embedder
+    s: AsyncSession,
+    action: PendingAction,
+    approver_id: uuid.UUID,
+    embedder: Embedder,
+    now: datetime,
 ) -> str:
     """Make the run's fee explainer the canonical answer for its fee type. The previous
-    canonical explainer for that fee type is archived. Writes only to the database."""
+    canonical explainer for that fee type is archived. Writes only to the database.
+    Each bullet is linked to the corpus chunk it came from, so replies can cite it."""
     payload = action.payload
     explainer = await s.get(FeeExplainer, uuid.UUID(payload["explainer_id"]))
     if explainer is None:
@@ -65,10 +71,13 @@ async def promote_canonical(
         or list(explainer.source_urls) != payload["source_urls"]
     ):
         raise GateError(409, "the fee explainer changed after this action was created")
+    chunk_ids = await bullet_chunk_ids(s, explainer, embedder)
+    if not any(chunk_ids):
+        raise GateError(409, "no bullet of this explainer could be traced to a corpus chunk")
     await s.execute(
         update(CanonicalExplainer)
         .where(CanonicalExplainer.fee_type == explainer.fee_type, CanonicalExplainer.active)
-        .values(active=False)
+        .values(active=False, archived_at=now)
     )
     text = "\n".join(explainer.bullets)
     canonical = CanonicalExplainer(
@@ -77,6 +86,7 @@ async def promote_canonical(
         embedding=embedder.embed_documents([text])[0],
         approved_by=approver_id,
         active=True,
+        bullet_chunk_ids=chunk_ids,
     )
     s.add(canonical)
     await s.flush()
@@ -95,7 +105,7 @@ async def _run(
 ) -> None:
     try:
         if action.kind == "promote_canonical":
-            result = await promote_canonical(s, action, approver_id, embedder)
+            result = await promote_canonical(s, action, approver_id, embedder, now())
         else:
             result = (await execute(s, action.id, approval.id, client)).result_id
     except (McpToolError, ToolNotAllowedError, NotApprovedError) as exc:

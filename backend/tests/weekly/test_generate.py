@@ -1,5 +1,6 @@
 """Model-facing parts of the weekly loop, with a scripted model."""
 
+import dataclasses
 import json
 from datetime import date
 
@@ -224,11 +225,26 @@ async def test_pulse_without_fee_issue_says_so() -> None:
 
 async def test_overlong_pulse_fails_the_length_cap() -> None:
     long = json.loads(pulse_handler([]))
-    long["summary"] = "word " * 300
+    long["actions"] = ["word " * 100] * 3  # action ideas are never cut
     llm = ScriptedLLM({"weekly_pulse": [json.dumps(long)]})
     text = await write_pulse(llm, _pulse_input())
     failed = [r.rule for r in check_pulse(text, PolicyContext(DOMAINS, TODAY)) if not r.passed]
     assert failed == ["length_caps"]
+
+
+async def test_an_overlong_summary_is_cut_to_fit_the_cap() -> None:
+    ctx = PolicyContext(DOMAINS, TODAY)
+    long = json.loads(pulse_handler([]))
+    long["summary"] = "Payments failed most often this week. " + "Many more words follow. " * 40
+    text = await write_pulse(ScriptedLLM({"weekly_pulse": [json.dumps(long)]}), _pulse_input())
+    assert "Payments failed most often this week." in text  # first sentence kept
+    assert "Many more words" not in text
+    assert all(r.passed for r in check_pulse(text, ctx))
+    # One long sentence can't be shortened, so the summary is left out.
+    long["summary"] = "word " * 300
+    text = await write_pulse(ScriptedLLM({"weekly_pulse": [json.dumps(long)]}), _pulse_input())
+    assert "word word" not in text and "\n\n\n" not in text
+    assert "Top themes:" in text and all(r.passed for r in check_pulse(text, ctx))
 
 
 async def test_pulse_needs_exactly_three_actions() -> None:
@@ -244,3 +260,18 @@ async def test_pulse_needs_exactly_three_actions() -> None:
 def test_chunk_helper_builds_retrieved_chunks() -> None:
     c = chunk("x", "k", "https://www.sebi.gov.in/x", "text")
     assert c.similarity == c.score == 0.8
+
+
+async def test_long_quotes_are_cut_to_verbatim_openings_when_still_over_the_cap() -> None:
+    long_quote = "UPI payment failed and money was debited. " + "It happened again and again. " * 12
+    inp = dataclasses.replace(_pulse_input(), quotes=[(long_quote, "Payment and UPI failures")] * 3)
+    out = json.loads(pulse_handler([]))
+    out["summary"] = "word " * 20
+    text = await write_pulse(ScriptedLLM({"weekly_pulse": [json.dumps(out)]}), inp)
+    assert count_words(text) <= PULSE_MAX_WORDS
+    quoted = [line for line in text.splitlines() if line.startswith('- "')]
+    assert len(quoted) == 3
+    for line in quoted:
+        shown = line.split('"')[1]
+        assert shown.endswith("…") and long_quote.startswith(shown.removesuffix("…"))
+    assert all(r.passed for r in check_pulse(text, PolicyContext(DOMAINS, TODAY)))

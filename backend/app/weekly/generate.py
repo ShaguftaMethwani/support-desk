@@ -12,7 +12,7 @@ failed rule; a second failure raises PolicyFailure and the run is marked failed.
 
 import re
 from collections.abc import Awaitable, Callable, Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field, replace
 from datetime import date
 from typing import Protocol
 
@@ -31,7 +31,7 @@ from app.policy import (
     failures,
     run_policy,
 )
-from app.policy.text import count_words
+from app.policy.text import count_words, split_sentences
 from app.policy.validators import (
     EXPLAINER_MAX_BULLETS,
     PULSE_MAX_WORDS,
@@ -143,21 +143,36 @@ Reply with JSON only: {"label": "...", "description": "..."}
 - No names, no personal details, no numbers, no advice."""
 
 
+QUESTION_THEME_PROMPT = """You name themes in customer questions to an investing app's support
+desk, for its product team. You get example questions from one group of similar questions.
+
+Reply with JSON only: {"label": "...", "description": "..."}
+- label: 2 to 5 words naming what these customers ask about, e.g. "Exit load on redemption".
+- description: one sentence, at most 20 words, saying what customers ask.
+- No names, no personal details, no numbers, no advice."""
+
+
 class ThemeLabel(BaseModel):
     label: str = Field(min_length=2, max_length=80)
     description: str = Field(min_length=2, max_length=300)
 
 
 async def label_theme(
-    llm: Completer, examples: list[str], feedback: str | None = None
+    llm: Completer,
+    examples: list[str],
+    feedback: str | None = None,
+    *,
+    questions: bool = False,
 ) -> ThemeLabel:
+    """Name a theme from its examples: app store reviews, or support-queue questions."""
     shown = "\n".join(f"- {e[:300]}" for e in examples[:EXAMPLES_PER_THEME])
-    user = f"Example reviews:\n{shown}"
+    user = f"Example {'questions' if questions else 'reviews'}:\n{shown}"
     if feedback:
         user += f"\n\nYour previous label was rejected:\n{feedback}\nFix it."
+    prompt = QUESTION_THEME_PROMPT if questions else THEME_PROMPT
     result = await llm.complete(
         "theme_label",
-        [{"role": "system", "content": THEME_PROMPT}, {"role": "user", "content": user}],
+        [{"role": "system", "content": prompt}, {"role": "user", "content": user}],
         schema=ThemeLabel,
         max_tokens=300,
     )
@@ -427,6 +442,22 @@ class PulseTheme:
 
 
 @dataclass(frozen=True)
+class SupportTheme:
+    """A surfaced support-queue question cluster (architecture section 9.1)."""
+
+    label: str
+    count: int
+    window_start: date
+    window_end: date
+
+    @property
+    def line(self) -> str:
+        """Written by code into the pulse; the pulse check looks for exactly this."""
+        return (f"{self.label} ({self.count} questions, "
+                f"{self.window_start:%d %b} to {self.window_end:%d %b})")  # fmt: skip
+
+
+@dataclass(frozen=True)
 class PulseInput:
     window_start: date
     window_end: date
@@ -436,6 +467,7 @@ class PulseInput:
     quotes: list[tuple[str, str]]  # (quote text, theme label)
     fees: FeeDetection
     explainer_attached: bool
+    support_themes: list[SupportTheme] = field(default_factory=list)
 
 
 PULSE_PROMPT = """You write the weekly product pulse for an investing app's product team, from app
@@ -485,19 +517,63 @@ def compose_pulse(inp: PulseInput, out: _PulseOut) -> str:
         f"{inp.reviews_analysed} reviews in the window, {inp.reviews_themed} long enough to group"
         " into themes.",
         "",
-        " ".join(out.summary.split()),
-        "",
-        "Top themes:",
     ]
+    summary = " ".join(out.summary.split())
+    if summary:
+        lines += [summary, ""]
+    lines += ["Top themes:"]
     for i, theme in enumerate(inp.themes):
         said = out.themes[i] if i < len(out.themes) else theme.description
         lines.append(f"- {theme.label} ({theme.count} reviews): {' '.join(said.split())}")
+    if inp.support_themes:
+        lines += ["", "From the support queue (similar customer questions):"]
+        lines += [f"- {t.line}" for t in inp.support_themes]
     if inp.quotes:
         lines += ["", "What users said:"]
         lines += [f'- "{text}" ({label})' for text, label in inp.quotes]
     lines += ["", *fee_lines(inp), "", "Action ideas:"]
     lines += [f"{i}. {' '.join(a.split())}" for i, a in enumerate(out.actions[:ACTION_COUNT], 1)]
     return "\n".join(lines)
+
+
+def shorten_quote(text: str, limit: int) -> str:
+    """The quote's opening words, cut at a word boundary and marked with an ellipsis. Still a
+    verbatim excerpt: the text before the ellipsis is a prefix of the review."""
+    if len(text) <= limit:
+        return text
+    cut = text[:limit].rsplit(" ", 1)[0].rstrip(" ,;:-")
+    return f"{cut}…"
+
+
+PULSE_QUOTE_LIMITS = (120, 80)
+
+
+def fit_pulse(inp: PulseInput, out: _PulseOut) -> str:
+    """The composed pulse, shortened by code when it is over the word cap. In order: the
+    model's summary goes to its first sentence, then is left out; then each quote is cut to
+    its opening words. Counts, themes, support-queue clusters, the fee lines and the action
+    ideas are never cut. If it is still too long, the length check fails it as before."""
+    text = compose_pulse(inp, out)
+    if count_words(text) <= PULSE_MAX_WORDS:
+        return text
+    sentences = split_sentences(" ".join(out.summary.split()))
+    steps: list[tuple[str, int | None]] = [
+        (sentences[0] if sentences else "", None),
+        ("", None),
+        *(("", limit) for limit in PULSE_QUOTE_LIMITS),
+    ]
+    for summary, limit in steps:
+        quotes = (
+            inp.quotes
+            if limit is None
+            else [(shorten_quote(q, limit), label) for q, label in inp.quotes]
+        )
+        text = compose_pulse(
+            replace(inp, quotes=quotes), out.model_copy(update={"summary": summary})
+        )
+        if count_words(text) <= PULSE_MAX_WORDS:
+            break
+    return text
 
 
 def model_word_budget(inp: PulseInput) -> int:
@@ -514,6 +590,9 @@ async def write_pulse(llm: Completer, inp: PulseInput, feedback: str | None = No
     )
     fee = " ".join(fee_lines(inp))
     user = f"Themes, most mentioned first:\n{themes}\n\nFees: {fee}"
+    if inp.support_themes:
+        asked = "\n".join(f"- {t.label}" for t in inp.support_themes)
+        user += f"\n\nCustomers keep asking support about:\n{asked}"
     if feedback:
         user += f"\n\nYour previous pulse was rejected:\n{feedback}\nFix it."
     result = await llm.complete(
@@ -525,8 +604,18 @@ async def write_pulse(llm: Completer, inp: PulseInput, feedback: str | None = No
         schema=_PulseOut,
         max_tokens=900,
     )
-    return compose_pulse(inp, _parsed(result, _PulseOut))
+    return fit_pulse(inp, _parsed(result, _PulseOut))
 
 
-def check_pulse(text: str, ctx: PolicyContext) -> list[RuleResult]:
-    return run_policy(PulseArtifact(text), ctx)
+def support_themes_reported(text: str, support: Sequence[SupportTheme]) -> RuleResult:
+    """No surfaced support-queue cluster may be missing from the pulse (Phase 6)."""
+    missing = [t.label for t in support if t.line not in text]
+    if missing:
+        return RuleResult("support_queue_reported", False, f"missing from the pulse: {missing[0]}")
+    return RuleResult("support_queue_reported", True, f"{len(support)} surfaced clusters")
+
+
+def check_pulse(
+    text: str, ctx: PolicyContext, support: Sequence[SupportTheme] = ()
+) -> list[RuleResult]:
+    return [*run_policy(PulseArtifact(text), ctx), support_themes_reported(text, support)]

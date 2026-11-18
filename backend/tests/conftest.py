@@ -97,3 +97,31 @@ class FakeOpenAI:
 @pytest.fixture
 def fake_openai() -> Callable[[list[Any]], FakeOpenAI]:
     return FakeOpenAI
+
+
+# --- canonical explainers on the shared database ---------------------------------------------
+# Tests that promote an explainer archive the active one for that fee type, which may be the
+# developer's real one. They record the active rows first and restore them afterwards.
+
+
+async def active_canonical_ids(s: Any) -> list[Any]:
+    from sqlalchemy import select
+
+    from app.db.models import CanonicalExplainer
+
+    return list(
+        (await s.scalars(select(CanonicalExplainer.id).where(CanonicalExplainer.active))).all()
+    )
+
+
+async def restore_canonicals(s: Any, ids: list[Any]) -> None:
+    from sqlalchemy import update
+
+    from app.db.models import CanonicalExplainer
+
+    if ids:
+        await s.execute(
+            update(CanonicalExplainer)
+            .where(CanonicalExplainer.id.in_(ids))
+            .values(active=True, archived_at=None)
+        )

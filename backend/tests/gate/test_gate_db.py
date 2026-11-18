@@ -33,6 +33,7 @@ from app.gate.actions import new_pending_action
 from app.gate.service import GateError, approve_action, combined_reply, reject_action, retry_action
 from app.mcp.client import McpToolError
 from app.mcp.execute import NotApprovedError, execute
+from tests.conftest import active_canonical_ids, restore_canonicals
 
 pytestmark = pytest.mark.db
 
@@ -101,6 +102,7 @@ class World:
                 source_urls=["https://www.sebi.gov.in/a", "https://www.amfiindia.com/b"],
                 last_checked=date(2026, 11, 17),
                 evidence_review_ids=["r1"],
+                chunk_ids=[str(uuid.uuid4())],  # promotion needs a chunk per bullet
             )
             s.add(explainer)
             await s.flush()
@@ -183,6 +185,8 @@ async def world() -> AsyncIterator[World]:
         await engine.dispose()
         pytest.skip(f"database not reachable: {type(exc).__name__}")
     w = World(async_sessionmaker(engine, expire_on_commit=False))
+    async with w.sessions() as s:
+        active = await active_canonical_ids(s)
     yield w
     async with w.sessions() as s:
         origins = [*w.runs, *w.messages]
@@ -199,6 +203,7 @@ async def world() -> AsyncIterator[World]:
         )
         await s.execute(delete(WeeklyRun).where(WeeklyRun.id.in_(w.runs)))
         await s.execute(delete(Message).where(Message.id.in_(w.messages)))
+        await restore_canonicals(s, active)
         await s.commit()
     await engine.dispose()
 
