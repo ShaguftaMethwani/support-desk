@@ -2,7 +2,7 @@
 
 Exactly the text appended to the Doc by `google_docs_append`, one entry per approved action.
 
-<!-- Action 44aa0fd0-b384-4b5c-a0e4-46dea3cb9000 (weekly_run, doc_append) -> google_docs_append, result 1NG2as_uXKbLRo-WkutHkze5tfUxZLsGbPipsZFuPBA4@AHj4eMQwypYW63wa3zC39OaiDpsSdSPmlOkA82s7up7izCVCnjYFLP-IgZwDLKYN_GoL91IX6g8UXcKtezJuaa5SN-rQt3xOURsaoJQr0sA, executed 2026-11-18 12:35 UTC -->
+<!-- Action 44aa0fd0-b384-4b5c-a0e4-46dea3cb9000 (weekly_run, doc_append) -> google_docs_append, result <GOOGLE_DOC_ID>@AHj4eMQwypYW63wa3zC39OaiDpsSdSPmlOkA82s7up7izCVCnjYFLP-IgZwDLKYN_GoL91IX6g8UXcKtezJuaa5SN-rQt3xOURsaoJQr0sA, executed 2026-11-18 12:35 UTC -->
 ```
 Weekly Product Pulse — 2026-11-18
 Window: 2026-08-27 to 2026-11-18
@@ -50,7 +50,7 @@ Last checked: 2026-11-17
 ------------------------------------------------------------
 ```
 
-<!-- Action 452deae9-0da6-4c0a-a24f-c4da14183f30 (queue_item, doc_append) -> google_docs_append, result 1NG2as_uXKbLRo-WkutHkze5tfUxZLsGbPipsZFuPBA4@AHj4eMSvgLlJNlNqasNU_1P6qBeYazM5upjGLd30SaNtALrRf1N_XeLiGDQ_zt5R9gSQQS-UQWP4pfB-kPZlYcp9VaPynJ6AKjpA9SdGA8I, executed 2026-11-18 12:36 UTC -->
+<!-- Action 452deae9-0da6-4c0a-a24f-c4da14183f30 (queue_item, doc_append) -> google_docs_append, result <GOOGLE_DOC_ID>@AHj4eMSvgLlJNlNqasNU_1P6qBeYazM5upjGLd30SaNtALrRf1N_XeLiGDQ_zt5R9gSQQS-UQWP4pfB-kPZlYcp9VaPynJ6AKjpA9SdGA8I, executed 2026-11-18 12:36 UTC -->
 ```
 Customer question — 2026-11-18
 Question: What's the exit load on HDFC Liquid Fund
