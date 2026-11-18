@@ -305,7 +305,7 @@ Build it in this order. Each step is testable on its own.
 
 The Google Docs and Gmail MCP server built earlier is reused as-is. No new MCP server is written. The server stays a plain executor: all approval logic lives in this project's gate, before any tool is called.
 
-- [ ] **Bring it into the project.** Add the server as a `mcp_server/` folder or a git submodule, so it is versioned with the backend and deploys with it. Record its source and version in the README.
+- [x] **Bring it into the project.** Copied into `mcp_server/` from `mcpserver-test` at commit `4677e61` (the repo is private, so a submodule would need extra access on Render). Source, version and changes are in `mcp_server/VENDORED.md` and the README. Changes: send tool removed, draft recipient optional, append returns the revision id, optional `dedupe_key` for idempotent appends.
 - [ ] **List its tools.** Connect with the `mcp` Python SDK client, call `list_tools`, and record each tool's name and input schema. Identify the tool that appends to a doc and the tool that creates a Gmail draft.
 - [ ] **Block sending.** If the server has a send-email tool, or any tool other than the two needed:
   - Preferred: disable or remove it in the server's configuration, so it is never loaded.
@@ -314,7 +314,7 @@ The Google Docs and Gmail MCP server built earlier is reused as-is. No new MCP s
   - **stdio server:** the backend starts it as a subprocess. Its runtime and dependencies go into the backend's Docker image, so it runs in the same Render container.
   - **HTTP server:** it needs its own free hosting, plus a shared secret between the backend and the server. Prefer stdio, because a second free service adds another thing that can sleep or fail.
 - [ ] **Move its Google credentials to environment variables.** A sign-in token saved on a laptop won't exist on Render. Pass the client id, client secret and refresh token as environment variables.
-- [ ] **Narrow the Google permissions.** If the existing token has broad Gmail access, create a new one with only the Docs scope and `gmail.compose`. With compose only, Google itself would reject a send even if the allow-list failed.
+- [ ] **Narrow the Google permissions.** If the existing token has broad Gmail access, create a new one with only the Docs scope and `gmail.compose`. Note: `gmail.compose` still allows sending through the Gmail API (there is no drafts-only Gmail scope), so the scope does not stop a send on its own. Sending is prevented by the server having no send tool and by the backend's allow-list.
 - [ ] **Check what the tools return.** The gate stores a result id for each executed action, such as the doc id and revision or the Gmail draft id. If a tool returns only a success message, add a small adapter in `backend/app/mcp/` that records what is available, or extend the server to return the id.
 - [ ] **Map payloads to tool inputs.** Write one mapping function per action kind that turns a pending action's payload (architecture section 10.3) into the tool's input schema. Hash the payload, not the mapped input, so the approval matches what the approval screen showed.
 - [ ] **MCP client** (`backend/app/mcp/`). `execute(action_id, approval_id)` is the only function that calls a tool. It re-checks the approval in the database, applies the allow-list, calls the tool with a timeout, and returns the result or a clear error.

@@ -70,6 +70,18 @@ uv run python ../evals/run_intents.py   # intent classifier on the labelled set
 uv run python ../evals/run_desk.py      # exit check: 20 real complaints through the desk
 ```
 
+## MCP server
+
+[`mcp_server/`](mcp_server/) is a copy of the Google Docs and Gmail MCP server from
+`ShaguftaMethwani/mcpserver-test` at commit `4677e61` (7 September 2026), changed so it can
+only create drafts and append to docs: the send tool is removed, draft recipients are
+optional, and appends return the revision and can be deduplicated. Details in
+[mcp_server/VENDORED.md](mcp_server/VENDORED.md).
+
+```bash
+cd mcp_server && npm ci && npm test && npm run build   # 45 tests; builds dist/index.js
+```
+
 ## Weekly loop
 
 ```bash
