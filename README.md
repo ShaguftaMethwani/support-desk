@@ -82,6 +82,21 @@ optional, and appends return the revision and can be deduplicated. Details in
 cd mcp_server && npm ci && npm test && npm run build   # 45 tests; builds dist/index.js
 ```
 
+The backend starts it over stdio for each approved action; it is not hosted separately. Only
+`google_docs_append` and `gmail_create_draft` can be called (`backend/app/mcp/allowlist.py`).
+
+## Approval gate
+
+Nothing is written to Google until a person approves that one action:
+
+```bash
+curl localhost:8000/actions/pending                     # kind, target, full payload, payload_hash
+curl -X POST localhost:8000/actions/<id>/approve \
+  -H 'content-type: application/json' -d '{"payload_hash": "<hash shown with the action>"}'
+curl -X POST localhost:8000/actions/<id>/reject
+curl -X POST localhost:8000/actions/<id>/retry          # a failed action, under its approval
+```
+
 ## Weekly loop
 
 ```bash

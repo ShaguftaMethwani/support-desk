@@ -35,7 +35,10 @@ function createLogger() {
     // config not initialized yet; safe default
   }
 
-  return pino({
+  // Logs must go to stderr: stdout carries the MCP protocol over stdio, and a log line there
+  // corrupts the stream. (pino writes to stdout by default.)
+  return pino(
+    {
     level,
     redact: {
       paths: REDACTED_PATHS,
@@ -45,7 +48,9 @@ function createLogger() {
       pid: false, // don't include PID in every log line (cleaner output over stdio)
     },
     timestamp: pino.stdTimeFunctions.isoTime,
-  });
+    },
+    pino.destination(2)
+  );
 }
 
 export const logger = createLogger();

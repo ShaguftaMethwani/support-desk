@@ -306,45 +306,56 @@ Build it in this order. Each step is testable on its own.
 The Google Docs and Gmail MCP server built earlier is reused as-is. No new MCP server is written. The server stays a plain executor: all approval logic lives in this project's gate, before any tool is called.
 
 - [x] **Bring it into the project.** Copied into `mcp_server/` from `mcpserver-test` at commit `4677e61` (the repo is private, so a submodule would need extra access on Render). Source, version and changes are in `mcp_server/VENDORED.md` and the README. Changes: send tool removed, draft recipient optional, append returns the revision id, optional `dedupe_key` for idempotent appends.
-- [ ] **List its tools.** Connect with the `mcp` Python SDK client, call `list_tools`, and record each tool's name and input schema. Identify the tool that appends to a doc and the tool that creates a Gmail draft.
-- [ ] **Block sending.** If the server has a send-email tool, or any tool other than the two needed:
+- [x] **List its tools.** Connect with the `mcp` Python SDK client, call `list_tools`, and record each tool's name and input schema. Identify the tool that appends to a doc and the tool that creates a Gmail draft.
+- [x] **Block sending.** If the server has a send-email tool, or any tool other than the two needed:
   - Preferred: disable or remove it in the server's configuration, so it is never loaded.
   - Required either way: the backend's tool allow-list (`backend/app/mcp/allowlist.py`) names only the doc-append and create-draft tools. The client refuses every other tool name before it reaches the server.
-- [ ] **Check the transport.**
+- [x] **Check the transport.**
   - **stdio server:** the backend starts it as a subprocess. Its runtime and dependencies go into the backend's Docker image, so it runs in the same Render container.
   - **HTTP server:** it needs its own free hosting, plus a shared secret between the backend and the server. Prefer stdio, because a second free service adds another thing that can sleep or fail.
-- [ ] **Move its Google credentials to environment variables.** A sign-in token saved on a laptop won't exist on Render. Pass the client id, client secret and refresh token as environment variables.
-- [ ] **Narrow the Google permissions.** If the existing token has broad Gmail access, create a new one with only the Docs scope and `gmail.compose`. Note: `gmail.compose` still allows sending through the Gmail API (there is no drafts-only Gmail scope), so the scope does not stop a send on its own. Sending is prevented by the server having no send tool and by the backend's allow-list.
-- [ ] **Check what the tools return.** The gate stores a result id for each executed action, such as the doc id and revision or the Gmail draft id. If a tool returns only a success message, add a small adapter in `backend/app/mcp/` that records what is available, or extend the server to return the id.
-- [ ] **Map payloads to tool inputs.** Write one mapping function per action kind that turns a pending action's payload (architecture section 10.3) into the tool's input schema. Hash the payload, not the mapped input, so the approval matches what the approval screen showed.
-- [ ] **MCP client** (`backend/app/mcp/`). `execute(action_id, approval_id)` is the only function that calls a tool. It re-checks the approval in the database, applies the allow-list, calls the tool with a timeout, and returns the result or a clear error.
+- [x] **Move its Google credentials to environment variables.** A sign-in token saved on a laptop won't exist on Render. Pass the client id, client secret and refresh token as environment variables.
+- [x] **Narrow the Google permissions.** If the existing token has broad Gmail access, create a new one with only the Docs scope and `gmail.compose`. Note: `gmail.compose` still allows sending through the Gmail API (there is no drafts-only Gmail scope), so the scope does not stop a send on its own. Sending is prevented by the server having no send tool and by the backend's allow-list.
+- [x] **Check what the tools return.** The gate stores a result id for each executed action, such as the doc id and revision or the Gmail draft id. If a tool returns only a success message, add a small adapter in `backend/app/mcp/` that records what is available, or extend the server to return the id.
+- [x] **Map payloads to tool inputs.** Write one mapping function per action kind that turns a pending action's payload (architecture section 10.3) into the tool's input schema. Hash the payload, not the mapped input, so the approval matches what the approval screen showed.
+- [x] **MCP client** (`backend/app/mcp/`). `execute(action_id, approval_id)` is the only function that calls a tool. It re-checks the approval in the database, applies the allow-list, calls the tool with a timeout, and returns the result or a clear error.
 
 ### Tasks: gate (`backend/app/gate/`)
-- [ ] **Creating pending actions.**
+- [x] **Creating pending actions.**
   - A weekly run that passes validation creates two pending actions: a doc append and an email draft.
   - Approving a queue draft creates its doc append and reply email draft.
   - Each action stores its full payload and a `payload_hash`, computed from canonical JSON with sorted keys.
-- [ ] **Approval endpoint.** `POST /actions/{id}/approve` with the `payload_hash`, inside one database transaction:
+- [x] **Approval endpoint.** `POST /actions/{id}/approve` with the `payload_hash`, inside one database transaction:
   1. Lock the action row.
   2. Check the status is `pending` and the hash matches.
   3. Insert the approval row. Its `action_id` is unique.
   4. Call `execute`.
   5. Store the result id, or mark the action `failed` with the error.
-- [ ] **Reject endpoint.** Marks only that action.
-- [ ] **Internal action.** `promote_canonical` uses the same approve endpoint, hash check and approval row, but writes to the database instead of calling a tool.
-- [ ] **Reply drafts have no recipient.** Customer emails are never stored, so the support agent adds the recipient in Gmail.
-- [ ] **Combined reply.** `POST /messages/{id}/combined-reply` is available only when every part is approved or rejected. It creates one new pending email-draft action, which needs its own approval.
-- [ ] **Payload formats** from architecture section 10.3, including the weekly email subject `Weekly Product Pulse + Customer Clarification — <date>`.
+- [x] **Reject endpoint.** Marks only that action.
+- [x] **Internal action.** `promote_canonical` uses the same approve endpoint, hash check and approval row, but writes to the database instead of calling a tool.
+- [x] **Reply drafts have no recipient.** Customer emails are never stored, so the support agent adds the recipient in Gmail.
+- [x] **Combined reply.** `POST /messages/{id}/combined-reply` is available only when every part is approved or rejected. It creates one new pending email-draft action, which needs its own approval.
+- [x] **Payload formats** from architecture section 10.3, including the weekly email subject `Weekly Product Pulse + Customer Clarification — <date>`.
 
 ### Tests
-- [ ] `execute` without a valid approval raises an error.
-- [ ] Approving with a stale hash is rejected.
-- [ ] Approving the doc append leaves the email draft pending.
-- [ ] A double click executes once.
-- [ ] Approving the weekly doc append does not create a canonical explainer. Only approving `promote_canonical` does.
-- [ ] The MCP client refuses any tool name outside the allow-list, including the server's send tool if it has one.
-- [ ] **Contract test** against the real server: call `list_tools` and check the two allowed tools still exist with the expected input schemas. This catches changes to the server early.
-- [ ] A tool timeout or server error marks the action `failed` and leaves it retryable, with nothing written twice.
+- [x] `execute` without a valid approval raises an error.
+- [x] Approving with a stale hash is rejected.
+- [x] Approving the doc append leaves the email draft pending.
+- [x] A double click executes once.
+- [x] Approving the weekly doc append does not create a canonical explainer. Only approving `promote_canonical` does.
+- [x] The MCP client refuses any tool name outside the allow-list, including the server's send tool if it has one.
+- [x] **Contract test** against the real server: call `list_tools` and check the two allowed tools still exist with the expected input schemas. This catches changes to the server early.
+- [x] A tool timeout or server error marks the action `failed` and leaves it retryable, with nothing written twice.
+
+### Status (November 2026)
+- **Server:** the vendored copy in `mcp_server/` (see its `VENDORED.md`). One more fix was needed while connecting it: its logger wrote to stdout, the MCP channel over stdio, so a log line reached the client as a malformed message. It now logs to stderr.
+- **Client** (`backend/app/mcp/`): the `mcp` Python SDK (2.3). Each call starts the server over stdio, runs one tool and stops it; the Google client id, secret and refresh token are passed from the backend's environment, and the server's token file goes to a fresh temporary directory. The server reports Google errors as a normal result with `"success": false`; the client turns those into errors, so a failed write is never recorded as done.
+- **Allow-list:** `doc_append` → `google_docs_append`, `email_draft` → `gmail_create_draft`. Any other name is refused before the server is started.
+- **Result ids:** doc appends store `<document id>@<revision id>`, drafts the Gmail draft id.
+- **No double writes:** every doc entry ends with `[support-desk action <id>]`, passed as the server's `dedupe_key`; a retry after a timeout finds it and appends nothing. A Gmail draft has no equivalent check, so a draft retried after a timeout (marked "outcome unknown") could exist twice; drafts are never sent, so the support agent deletes the extra one.
+- **Gate** (`backend/app/gate/service.py`): approve locks the action row, checks it is pending and that the hash the human saw matches the stored payload, inserts the approval, executes, and stores the result or the error, in one transaction. A failed action keeps its approval and is retried with `POST /actions/{id}/retry`. `promote_canonical` writes the canonical explainer (archiving the previous one for that fee type) and calls no tool. Actions created before `GOOGLE_DOC_ID` was set target `google_doc_unset`; they fail with a clear error without calling the tool and should be rejected.
+- **Docker:** the image is now built from the repo root, with the MCP server built in a Node stage and the Node binary copied into the Python image. Not built yet: Docker isn't installed on the development machine, so this is checked at deployment (Phase 10).
+- **Tests:** 12 client, mapping and contract tests (the contract test runs the real built server) and 9 database tests for the gate, including a double click (two concurrent approvals: one execution, one approval row) and the API.
+- **Exit check (18 November 2026):** a fresh weekly run was approved through the API: its doc append and email draft both executed. A queue answer (the HDFC Liquid Fund exit load) was approved, then its doc append and email draft. Read back from Google: the Doc holds exactly the two entries, each with its action marker once, and Gmail holds the two drafts with the expected subjects and no recipient. The written text is saved in `samples/doc_entries.md` and `samples/email_drafts.md`. The weekly run's `promote_canonical` was left pending for Phase 6. The 5 actions of the two earlier runs (doc target `google_doc_unset`) were rejected.
 
 ### Exit check
 - One real weekly run is approved, which appends a real entry to the Google Doc and creates a real Gmail draft. Save both for the submission.

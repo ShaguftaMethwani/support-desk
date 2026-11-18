@@ -25,6 +25,9 @@ only executes the call it is given.
    the revision that was read (`writeControl.requiredRevisionId`), so a change in between
    makes the call fail and be retried rather than write twice or at a stale position. The
    backend passes the pending action id as the key.
+5. **Logs to stderr.** The logger wrote to stdout (pino's default), which is the MCP protocol
+   channel over stdio: a log line there was read by the client as a malformed message. It now
+   writes to stderr, as the entry point's comments already said it did.
 
 Tests were updated to match: the send tests are removed; new tests cover drafts without a
 recipient, the send API never being called, revision ids, deduplication and the pinned write,

@@ -126,7 +126,11 @@ class Settings(BaseSettings):
     google_client_secret: SecretStr | None = None
     google_refresh_token: SecretStr | None = None
     google_doc_id: str | None = None
+    # The vendored MCP server (mcp_server/), started over stdio for each tool call.
+    # By default `node dist/index.js` in mcp_server_dir; set the command to override.
     mcp_server_command: str | None = None
+    mcp_server_dir: Path = REPO_ROOT / "mcp_server"
+    mcp_timeout_seconds: float = 30.0
 
     @field_validator("reasoning_effort", mode="before")
     @classmethod

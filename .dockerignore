@@ -1,0 +1,19 @@
+# Build context is the repo root. Never send secrets or local build output to Docker.
+.git
+**/.env
+**/.env.*
+!**/.env.example
+**/tokens.json
+**/node_modules
+**/dist
+**/__pycache__
+**/.pytest_cache
+**/.mypy_cache
+**/.ruff_cache
+backend/.venv
+backend/.cache
+backend/corpus/raw
+frontend
+docs
+evals
+samples
