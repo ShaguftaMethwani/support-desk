@@ -384,7 +384,7 @@ flowchart LR
 - A small model with a fixed label set returns `intent`, `confidence` and slots, for example `scheme=HDFC Liquid Fund`.
 - **Keyword pre-rules run first.** Obvious advice ("should I", "is it good", "which fund") and returns ("how much return", "CAGR") are forced to the refusal intents. The model alone can't override them, so rephrasing can't talk the system out of a refusal.
 - If confidence is below a threshold, the intent becomes `unclear` and the system asks one clarifying question.
-- **Session memory** stores the last resolved scheme and a sticky `advice_refused` flag, so follow-ups like "and the ELSS one?" resolve correctly and refusals hold across the session.
+- **Session memory** stores the last resolved scheme and a sticky `advice_refused` flag, so follow-ups like "and the ELSS one?" resolve correctly and refusals hold across the session. The session scheme fills only a follow-up (a pronoun, or a scheme fact with no scheme named), never an unrelated complaint. After a refusal, soft advice wording ("is it a smart move") counts as advice.
 
 | Intent | Route |
 |---|---|
@@ -465,8 +465,11 @@ class RoutingNote(BaseModel):
 | PII present or high compliance risk | compliance | P1 |
 | Pattern `rising` | product | P1 |
 | Pattern `recurring`, fee related | support_l2_payments | P2 |
+| Pattern `recurring`, not fee related | product | P2 |
 | Facts `not_covered` | support_l2_payments | P2 |
 | Otherwise | support_l1 | P3 |
+
+The "recurring, not fee related" row was added in Phase 4: without it a recurring product problem fell through to "not covered" and went to payments support. Customer-facing reply text never names an internal team; the routing note does.
 
 **Disagreement rule.** If Facts is `answered` and Pattern is `recurring` or `rising`, the routing note must state the disagreement, and the item is marked "reply and escalate" instead of "reply and close".
 

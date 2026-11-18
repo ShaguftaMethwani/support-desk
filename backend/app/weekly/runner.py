@@ -73,7 +73,7 @@ def default_deps() -> WeeklyDeps:
     embedder = FastEmbedder()
     return WeeklyDeps(
         sessions=sessions,
-        llm=LLMClient(settings, PostgresCache(sessions)),
+        llm=LLMClient(settings, PostgresCache(sessions, write_behind=True)),
         embedder=embedder,
         retriever_for=lambda session: Retriever(session, embedder),
         settings=settings,

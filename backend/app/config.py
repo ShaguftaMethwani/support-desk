@@ -89,6 +89,24 @@ class Settings(BaseSettings):
     ]
 
     weekly_trigger_token: SecretStr | None = None
+
+    # Response loop (architecture section 7).
+    intent_min_confidence: float = 0.6  # below this the intent becomes "unclear"
+    # After an advice refusal in a session, a model "advice" label counts from this confidence.
+    sticky_advice_min_confidence: float = 0.3
+    chat_session_ttl_minutes: int = 120
+    # Queue items drafted at once. Each holds up to 3 database connections while it runs.
+    desk_parallel_items: int = 3
+    # Pattern Agent. Calibrated on the real reviews (bge-small): related complaints score
+    # 0.74 to 0.85 against a question, fact questions at most 0.67, off-topic text about 0.5.
+    pattern_similarity: float = 0.74
+    # Theme centroids sit closer to everything (they average many reviews): a crash question
+    # scores 0.785 to the crash theme, unrelated questions 0.75 to 0.76.
+    theme_match_similarity: float = 0.77
+    pattern_window_days: int = 28
+    recurring_min: int = 5  # similar items in the window
+    rising_min: int = 3  # this week's items, and at least double the previous week's
+    question_cluster_similarity: float = 0.85
     # Weekly loop (architecture section 8).
     reviews_csv_path: Path = REPO_ROOT / "data" / "reviews_sample.csv"
     weekly_window_weeks: int = 12  # the review sample covers the last 12 weeks

@@ -58,6 +58,18 @@ uv run python ../evals/run_facts.py      # Facts Agent test set (uses Groq, cach
 
 HDFC documents must be downloaded by hand first. See [backend/corpus/manual/README.md](backend/corpus/manual/README.md).
 
+## Response loop
+
+With the API running locally (`APP_ENV=local`; login arrives in Phase 10):
+
+```bash
+curl -X POST localhost:8000/chat/message -H 'content-type: application/json' \
+  -d '{"text": "What is the exit load of HDFC Liquid Fund, and should I redeem now?"}'
+curl localhost:8000/queue
+uv run python ../evals/run_intents.py   # intent classifier on the labelled set
+uv run python ../evals/run_desk.py      # exit check: 20 real complaints through the desk
+```
+
 ## Weekly loop
 
 ```bash

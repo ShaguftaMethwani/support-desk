@@ -226,55 +226,69 @@ Phase 3 needs Phase 2's retriever only for the fee explainer. Clustering can sta
 Build it in this order. Each step is testable on its own.
 
 ### 4.1 Message intake and splitter (`backend/app/intent/splitter.py`)
-- [ ] `POST /chat/message` runs the guard, then the splitter, then creates one `message` row and one `queue_item` per part.
-- [ ] **Code rules** split on question marks, lists, line breaks, and joining words when both sides contain a question word or verb.
-- [ ] **Model fallback** uses the small model only when the rules are unsure, returning JSON parts.
-- [ ] **Coverage check.** Parts must be built from the original words. If not, fall back to a single part.
-- [ ] **Shared slots** carry scheme and fee type to parts that lack them, and resolve pronouns to the nearest named scheme.
-- [ ] **Cap and deduplicate.** Keep at most 5 parts, store the dropped ones in `parts_dropped`, and merge duplicates.
-- [ ] **Tests:** 25 split cases, including single questions, lists, shared schemes, pronouns, more than 5 parts, and tightly linked questions.
+- [x] `POST /chat/message` runs the guard, then the splitter, then creates one `message` row and one `queue_item` per part.
+- [x] **Code rules** split on question marks, lists, line breaks, and joining words when both sides contain a question word or verb.
+- [x] **Model fallback** uses the small model only when the rules are unsure, returning JSON parts.
+- [x] **Coverage check.** Parts must be built from the original words. If not, fall back to a single part.
+- [x] **Shared slots** carry scheme and fee type to parts that lack them, and resolve pronouns to the nearest named scheme.
+- [x] **Cap and deduplicate.** Keep at most 5 parts, store the dropped ones in `parts_dropped`, and merge duplicates.
+- [x] **Tests:** 25 split cases, including single questions, lists, shared schemes, pronouns, more than 5 parts, and tightly linked questions.
 
 ### 4.2 Intent classifier (`backend/app/intent/classifier.py`)
-- [ ] **Keyword pre-rules** for advice and returns that the model can't override.
-- [ ] **Small model** with the 7 labels, a confidence score and slots, using JSON mode.
-- [ ] **Low confidence** becomes `unclear`, which produces one clarifying question.
-- [ ] **Session memory** stores the last scheme and the sticky `advice_refused` flag in the `chat_session` table, keyed by session id and linked to the logged-in user. It holds only redacted text and expires after a set time.
-- [ ] **Unclear questions** get a clarifying question stored as a draft with `source_type = clarification`, so every queue item still ends with a draft.
-- [ ] **Start the labelled intent set** in `evals/datasets/intents_labelled.jsonl` now, with at least 30 questions. Use it to tune the pre-rules.
+- [x] **Keyword pre-rules** for advice and returns that the model can't override.
+- [x] **Small model** with the 7 labels, a confidence score and slots, using JSON mode.
+- [x] **Low confidence** becomes `unclear`, which produces one clarifying question.
+- [x] **Session memory** stores the last scheme and the sticky `advice_refused` flag in the `chat_session` table, keyed by session id and linked to the logged-in user. It holds only redacted text and expires after a set time.
+- [x] **Unclear questions** get a clarifying question stored as a draft with `source_type = clarification`, so every queue item still ends with a draft.
+- [x] **Start the labelled intent set** in `evals/datasets/intents_labelled.jsonl` now, with at least 30 questions. Use it to tune the pre-rules.
 
 ### 4.3 Three agents (`backend/app/agents/`)
-- [ ] **Facts Agent** from Phase 2.
-- [ ] **Rolling question clusters.** Each new queue item joins the nearest `question_cluster` above a similarity threshold, or starts a new one. Built here because the Pattern Agent needs it. Phase 6 adds surfacing on top.
-- [ ] **Pattern Agent.** Embed the question, match it against the latest theme centroids and the rolling question clusters, and compute counts in SQL. Apply the recurring and rising rules from architecture section 7.4. No model call.
-- [ ] **Compliance Agent.** Uses the guard's `pii_flags` plus the advice and returns detectors on the incoming text. Calls the small model only when the code checks are inconclusive.
-- [ ] **Parallel run.** `asyncio.gather` over the three agents, with an `agent_run` row for each that stores its start time, end time and output. The overlapping times are the proof that they run in parallel.
+- [x] **Facts Agent** from Phase 2.
+- [x] **Rolling question clusters.** Each new queue item joins the nearest `question_cluster` above a similarity threshold, or starts a new one. Built here because the Pattern Agent needs it. Phase 6 adds surfacing on top.
+- [x] **Pattern Agent.** Embed the question, match it against the latest theme centroids and the rolling question clusters, and compute counts in SQL. Apply the recurring and rising rules from architecture section 7.4. No model call.
+- [x] **Compliance Agent.** Uses the guard's `pii_flags` plus the advice and returns detectors on the incoming text. Calls the small model only when the code checks are inconclusive.
+- [x] **Parallel run.** `asyncio.gather` over the three agents, with an `agent_run` row for each that stores its start time, end time and output. The overlapping times are the proof that they run in parallel.
 
 ### 4.4 Orchestrator (`backend/app/orchestrator/`)
-- [ ] **Route by intent.** Refusal templates for advice and returns, with AMFI, SEBI or factsheet links. The canonical explainer path stays a stub until Phase 6. The full draft path covers the rest.
-- [ ] **Drafting.** The large model writes a reply of at most 3 sentences from the Facts result only. Code attaches the citation and `Last checked` date. The model never writes URLs.
-- [ ] **Routing note.** The deterministic rules table from architecture section 7.5, plus the disagreement rule.
-- [ ] **Draft versioning.** Every draft is a new `draft_version` row.
+- [x] **Route by intent.** Refusal templates for advice and returns, with AMFI, SEBI or factsheet links. The canonical explainer path stays a stub until Phase 6. The full draft path covers the rest.
+- [x] **Drafting.** The large model writes a reply of at most 3 sentences from the Facts result only. Code attaches the citation and `Last checked` date. The model never writes URLs.
+- [x] **Routing note.** The deterministic rules table from architecture section 7.5, plus the disagreement rule.
+- [x] **Draft versioning.** Every draft is a new `draft_version` row.
 
 ### 4.5 Reviewer (`backend/app/reviewer/`)
-- [ ] Run the policy engine, plus the large-model advice judge, which can only add failures.
-- [ ] On a fail, send the named failure back to the orchestrator once. On a second fail, mark the draft `blocked`.
-- [ ] **The API refuses to approve a blocked draft.** Enforce this in the service layer, not only in the UI.
+- [x] Run the policy engine, plus the large-model advice judge, which can only add failures.
+- [x] On a fail, send the named failure back to the orchestrator once. On a second fail, mark the draft `blocked`.
+- [x] **The API refuses to approve a blocked draft.** Enforce this in the service layer, not only in the UI.
 
 ### 4.6 Refinement and human decisions
-- [ ] **All human text goes through the ingress guard** before storage or any model call. That covers refinement feedback, draft edits and corrected transcripts.
-- [ ] `POST /queue/{id}/refine` classifies the feedback, re-runs only the affected agents (architecture section 7.7), reuses cached outputs and logs `agents_fired`. Refuse a sixth round.
-- [ ] `PUT /queue/{id}/draft` stores the human edit as a new version and re-runs the policy engine. Edits are allowed on blocked drafts, and a corrected version that passes can be approved.
-- [ ] `POST /queue/{id}/approve` accepts the draft and creates its two pending actions. It writes nothing to Google.
-- [ ] `POST /queue/{id}/reject` changes only that item's status.
-- [ ] `POST /queue/import-csv` turns selected review rows into queue items.
+- [x] **All human text goes through the ingress guard** before storage or any model call. That covers refinement feedback, draft edits and corrected transcripts.
+- [x] `POST /queue/{id}/refine` classifies the feedback, re-runs only the affected agents (architecture section 7.7), reuses cached outputs and logs `agents_fired`. Refuse a sixth round.
+- [x] `PUT /queue/{id}/draft` stores the human edit as a new version and re-runs the policy engine. Edits are allowed on blocked drafts, and a corrected version that passes can be approved.
+- [x] `POST /queue/{id}/approve` accepts the draft and creates its two pending actions. It writes nothing to Google.
+- [x] `POST /queue/{id}/reject` changes only that item's status.
+- [x] `POST /queue/import-csv` turns selected review rows into queue items.
 
 ### Tests
-- [ ] **Branch tests:** a clean answer, a not-covered question, a recurring theme, a PII message, an advice request and a returns request. Check the agents fired, the routing and the reviewer result for each.
-- [ ] **Mixed multi-question message:** factual parts are answered and the advice part is refused, each with its own citation or refusal link.
-- [ ] **Session refusal holds** when the advice question is rephrased later in the session.
-- [ ] **PII in human text:** an edit and a refinement note containing a PAN are both redacted before storage.
-- [ ] **Reviewer rework:** a fake orchestrator produces an uncited draft. Check it is sent back once, then blocked.
-- [ ] **Refinement:** each feedback type fires only its agents, and the sixth round is refused.
+- [x] **Branch tests:** a clean answer, a not-covered question, a recurring theme, a PII message, an advice request and a returns request. Check the agents fired, the routing and the reviewer result for each.
+- [x] **Mixed multi-question message:** factual parts are answered and the advice part is refused, each with its own citation or refusal link.
+- [x] **Session refusal holds** when the advice question is rephrased later in the session.
+- [x] **PII in human text:** an edit and a refinement note containing a PAN are both redacted before storage.
+- [x] **Reviewer rework:** a fake orchestrator produces an uncited draft. Check it is sent back once, then blocked.
+- [x] **Refinement:** each feedback type fires only its agents, and the sixth round is refused.
+
+### Status (November 2026)
+- **Login is a stand-in until Phase 10.** The desk API acts as one local developer user, and only when `APP_ENV` is `local` or `test`. In any other environment `/chat/message` and `/queue` return 401, so nothing can be deployed with the desk open before login exists.
+- **Splitter:** code rules settle most messages. A joining word splits only when both sides *start* like a question ("what", "how", "should I"...); a sentence that isn't a question ("I mean HDFC ELSS Tax Saver.") stays with the question before it. The model is asked only for "A and B" with a fact topic on each side. A part with its own topic doesn't take another part's fee type. 25 split cases plus the model fallback and coverage check.
+- **Pre-rules tuned on the labelled set** (40 questions, `evals/datasets/intents_labelled.jsonl`). The factual rows include known traps, each fixed in the rules: "best time to submit a redemption" (cut-off, not timing advice), "income tax returns", "can you advise how to update my KYC", "the app performance is terrible". With the real model: **38 of 40 correct**; all 18 advice and returns questions are caught by code. The 2 misses (a KYC question labelled out_of_scope, a stamp duty question labelled fee_canonical) still get the full pipeline.
+- **Session scheme only fills follow-ups:** a question that refers back ("its exit load", "and the lock-in?"). An unrelated complaint doesn't inherit the last scheme.
+- **Pattern Agent thresholds** calibrated on the real reviews: question-to-review similarity 0.74 (related complaints 0.74–0.85, fact questions at most 0.67), theme match 0.77 (theme centroids sit close to everything).
+- **Routing:** one row added to the architecture's table: Pattern recurring, not fee related → product, P2. Without it a recurring app problem (11 reviews about crashes) fell through to "not covered" and went to payments support. Customer-facing text never names an internal team.
+- **Refusals cite the corpus:** advice refusals link an AMFI or SEBI education page and returns refusals the scheme's factsheet, both found by retrieval, so they pass the same citation check as answers.
+- **Reviewer:** template drafts (refusals, not covered, clarifying questions) get no rework, since rewording a template can't fix it. A draft blocked for a missing citation can't be rescued by editing; one blocked for its wording can.
+- **Load:** at most 3 queue items are drafted at once, and an item holds no database connection while its agents run. The first exit-check attempt exhausted the connection pool with 20 parallel items.
+- **LLM cache:** an in-memory copy in front of Postgres, and the Postgres write runs in the background. From a laptop to Neon in us-east-2 each round trip is about 275 ms and opening a session about 1.9 s, so a question took 20–40 s locally; most of that is database latency that a server next to the database won't have.
+- **Exit check** (`evals/run_desk.py`, 20 real low-rated reviews): 20/20 got output from every agent their route needs, 20/20 ended with a cited draft, refusal or "not covered", and 20/20 had overlapping agent run times. No draft was blocked in that run; the API test confirms a blocked draft returns 409 on approve.
+- **Tests:** 32 splitter, 47 classifier and pre-rule, 28 agent, routing and drafting unit tests, and 16 database tests (6 branches, mixed message, sticky refusal, PII in edits and refinement notes, rework then blocked, edit to unblock, refinement agents and the 5-round cap, approve, API refusal of a blocked draft, 401 outside local).
 
 ### Exit check
 - 20 real complaints from the CSV all produce structured output from all three agents, plus a draft or "not covered".

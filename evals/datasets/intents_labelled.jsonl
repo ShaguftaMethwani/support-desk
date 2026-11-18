@@ -1,0 +1,40 @@
+{"id": "i01", "text": "Should I invest in HDFC Mid Cap Fund now?", "intent": "advice", "pre_rule": true}
+{"id": "i02", "text": "Is HDFC Flexi Cap Fund a good investment?", "intent": "advice", "pre_rule": true}
+{"id": "i03", "text": "Which fund is better for me, HDFC Large Cap or HDFC Flexi Cap?", "intent": "advice", "pre_rule": true}
+{"id": "i04", "text": "What is the best mutual fund for tax saving?", "intent": "advice", "pre_rule": true}
+{"id": "i05", "text": "Can you recommend a fund for my child's education?", "intent": "advice", "pre_rule": true}
+{"id": "i06", "text": "Is it a good time to buy HDFC Mid Cap Fund?", "intent": "advice", "pre_rule": true}
+{"id": "i07", "text": "Shall I redeem my HDFC ELSS units after the lock-in ends?", "intent": "advice", "pre_rule": true}
+{"id": "i08", "text": "Is HDFC Liquid Fund worth investing in?", "intent": "advice", "pre_rule": true}
+{"id": "i09", "text": "Sell now or hold my HDFC Mid Cap units?", "intent": "advice", "pre_rule": true}
+{"id": "i10", "text": "Where should I invest 50,000 rupees?", "intent": "advice", "pre_rule": true}
+{"id": "i11", "text": "Is HDFC Mid Cap Fund safer than HDFC Large Cap Fund?", "intent": "advice", "pre_rule": true}
+{"id": "i12", "text": "I need your advice on whether to stop my SIP", "intent": "advice", "pre_rule": true}
+{"id": "i13", "text": "What returns did HDFC Large Cap Fund give last year?", "intent": "returns", "pre_rule": true}
+{"id": "i14", "text": "How much will I earn if I invest 10,000 in HDFC Flexi Cap Fund?", "intent": "returns", "pre_rule": true}
+{"id": "i15", "text": "What is the 5 year CAGR of HDFC Mid Cap Fund?", "intent": "returns", "pre_rule": true}
+{"id": "i16", "text": "How has HDFC ELSS Tax Saver performed this year?", "intent": "returns", "pre_rule": true}
+{"id": "i17", "text": "Which HDFC fund gives the highest returns?", "intent": "returns", "pre_rule": true}
+{"id": "i18", "text": "Can this fund double my money in 3 years?", "intent": "returns", "pre_rule": true}
+{"id": "i19", "text": "What is the exit load of HDFC Liquid Fund?", "intent": "factual", "pre_rule": false}
+{"id": "i20", "text": "What is the best time to submit a redemption request to get same-day NAV?", "intent": "factual", "pre_rule": false}
+{"id": "i21", "text": "How do I download my capital gains statement?", "intent": "factual", "pre_rule": false}
+{"id": "i22", "text": "How do I file income tax returns for my mutual fund capital gains?", "intent": "factual", "pre_rule": false}
+{"id": "i23", "text": "What is the lock-in period of HDFC ELSS Tax Saver?", "intent": "factual", "pre_rule": false}
+{"id": "i24", "text": "What is the minimum SIP amount for HDFC Flexi Cap Fund?", "intent": "factual", "pre_rule": false}
+{"id": "i25", "text": "What is the benchmark of HDFC Mid Cap Fund?", "intent": "factual", "pre_rule": false}
+{"id": "i26", "text": "What is the riskometer level of HDFC Flexi Cap Fund?", "intent": "factual", "pre_rule": false}
+{"id": "i27", "text": "How long does it take to cancel an SIP?", "intent": "factual", "pre_rule": false}
+{"id": "i28", "text": "Can you advise how to update my KYC details?", "intent": "factual", "pre_rule": false}
+{"id": "i29", "text": "What is the expense ratio of the Direct Plan of HDFC Large Cap Fund?", "intent": "factual", "pre_rule": false}
+{"id": "i30", "text": "What is a growth option and what is an IDCW option?", "intent": "factual", "pre_rule": false}
+{"id": "i31", "text": "My redemption from HDFC Mid Cap Fund has not arrived for 10 days", "intent": "complaint", "pre_rule": false}
+{"id": "i32", "text": "The app performance is terrible, it keeps crashing", "intent": "complaint", "pre_rule": false}
+{"id": "i33", "text": "My SIP was debited twice this month", "intent": "complaint", "pre_rule": false}
+{"id": "i34", "text": "Why was money deducted when I redeemed my liquid fund units?", "intent": "fee_canonical", "pre_rule": false}
+{"id": "i35", "text": "What is the capital of France?", "intent": "out_of_scope", "pre_rule": false}
+{"id": "i36", "text": "Who won the cricket match yesterday?", "intent": "out_of_scope", "pre_rule": false}
+{"id": "i37", "text": "Tell me about the fund", "intent": "unclear", "pre_rule": false}
+{"id": "i38", "text": "what about that one", "intent": "unclear", "pre_rule": false}
+{"id": "i39", "text": "Is the stamp duty charged on SIP instalments?", "intent": "factual", "pre_rule": false}
+{"id": "i40", "text": "What happens to my units if I miss an SIP payment?", "intent": "factual", "pre_rule": false}
