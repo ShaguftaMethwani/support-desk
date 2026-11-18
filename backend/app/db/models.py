@@ -77,12 +77,14 @@ class CorpusSource(Base):
     __tablename__ = "corpus_source"
 
     id: Mapped[uuid.UUID] = _uuid_pk()
+    key: Mapped[str] = mapped_column(String(64), unique=True)  # id in corpus/sources.yaml
     url: Mapped[str] = mapped_column(Text, unique=True)
     publisher: Mapped[str] = mapped_column(String(32))  # hdfc_mf | sebi | amfi | indmoney_help
     doc_type: Mapped[str] = mapped_column(String(64))
     title: Mapped[str | None] = mapped_column(Text)
     schemes: Mapped[list[Any]] = _json_list()
     fetched_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    sha256: Mapped[str | None] = mapped_column(String(64))
     created_at: Mapped[datetime] = _created_at()
 
 
@@ -98,6 +100,8 @@ class CorpusChunk(Base):
     text: Mapped[str] = mapped_column(Text)
     section: Mapped[str | None] = mapped_column(Text)
     scheme: Mapped[str | None] = mapped_column(String(64), index=True)
+    page: Mapped[int | None] = mapped_column(Integer)
+    token_count: Mapped[int | None] = mapped_column(Integer)
     embedding: Mapped[list[float] | None] = mapped_column(Vector(EMBED_DIM))
     tsv: Mapped[Any] = mapped_column(
         TSVECTOR, Computed("to_tsvector('english', text)", persisted=True)

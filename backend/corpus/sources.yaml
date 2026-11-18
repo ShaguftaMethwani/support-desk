@@ -1,0 +1,144 @@
+# The single source list for the corpus (architecture section 5.1).
+# The README source list is generated from this file.
+#
+# Fields
+#   id         stable short name, used in tests and evals
+#   url        the official public URL. Every citation points here. Never guessed.
+#   publisher  hdfc_mf | sebi | amfi | indmoney_help
+#   doc_type   kim | sid | sai | factsheet | fees | faq | statement_guide | regulation | education
+#              | platform_process (INDMoney help pages; cited only for in-app process questions)
+#   schemes    scheme slugs the document covers, or [general]. A document listing several
+#              schemes is split per page: pages about out-of-scope HDFC schemes are skipped.
+#   fetch      auto   - downloaded by the fetcher (robots.txt respected)
+#              manual - the site blocks automated access, so the file is downloaded by hand in
+#                       a browser from `url` and saved at corpus/manual/<file>
+#   file       manual sources only: file name under corpus/manual/ (.pdf, .html or .xlsx/.xls)
+#   pages      optional PDF page ranges to keep, e.g. [[46, 52], [55, 82]]
+#
+# Domains are checked against the allow-list in app/config.py (source_domains).
+
+sources:
+  # --- HDFC Mutual Fund: manual download (hdfcfund.com blocks automated requests) -------------
+  # For each entry: open hdfcfund.com in a browser, download the document, save it under
+  # corpus/manual/ with the given file name, and paste the page's exact URL into `url`.
+  # Entries without both a file and a URL are skipped at ingest and reported as pending.
+  - id: hdfc_large_cap_kim
+    url: "https://files.hdfcfund.com/s3fs-public/KIM/2025-11/KIM%20-%20HDFC%20Large%20Cap%20Fund%20dated%20November%2021%2C%202025_0.pdf?VersionId=XuOtUPPEfOmbQpuzxBMGCAdqsTmowMh4"
+    publisher: hdfc_mf
+    doc_type: kim
+    schemes: [hdfc_large_cap]
+    fetch: manual
+    file: hdfc_large_cap_kim.pdf
+
+  - id: hdfc_flexi_cap_kim
+    url: "https://files.hdfcfund.com/s3fs-public/KIM/2025-11/KIM%20-%20HDFC%20Flexi%20Cap%20Fund%20dated%20November%2021%2C%202025_1.pdf?VersionId=kjfKm83nM5q0LDh1xu645ZXrnetxOtVr"
+    publisher: hdfc_mf
+    doc_type: kim
+    schemes: [hdfc_flexi_cap]
+    fetch: manual
+    file: hdfc_flexi_cap_kim.pdf
+
+  - id: hdfc_elss_kim
+    url: "https://files.hdfcfund.com/s3fs-public/KIM/2025-11/KIM%20-%20HDFC%20ELSS%20Tax%20Saver%20dated%20November%2021%2C%202025_0.pdf?VersionId=CWvBjiK_hIuApMLzaZJVRt17Sc6tmlog"
+    publisher: hdfc_mf
+    doc_type: kim
+    schemes: [hdfc_elss_tax_saver]
+    fetch: manual
+    file: hdfc_elss_tax_saver_kim.pdf
+
+  - id: hdfc_mid_cap_kim
+    url: "https://files.hdfcfund.com/s3fs-public/KIM/2025-11/KIM%20-%20HDFC%20Mid%20Cap%20Fund%20dated%20November%2021%2C%202025_1.pdf?VersionId=lvZLv6TD_uI7sOzea0XCJmAfPcbIHPlw"
+    publisher: hdfc_mf
+    doc_type: kim
+    schemes: [hdfc_mid_cap]
+    fetch: manual
+    file: hdfc_mid_cap_kim.pdf
+
+  - id: hdfc_liquid_kim
+    url: "https://files.hdfcfund.com/s3fs-public/KIM/2026-06/KIM%20-%20HDFC%20Liquid%20Fund%20dated%20November%2021%2C%202025.pdf?VersionId=DsGe6t_oQ_0yqD79ISrWSsIuXHdiHPZn"
+    publisher: hdfc_mf
+    doc_type: kim
+    schemes: [hdfc_liquid]
+    fetch: manual
+    file: hdfc_liquid_kim.pdf
+
+  - id: hdfc_factsheet
+    url: "https://files.hdfcfund.com/s3fs-public/2026-10/HDFC%20MF%20Factsheet%20-%20September%202026.pdf?VersionId=xjdQxQp4UEchOirw4TsCE9jEGenOREzw"
+    publisher: hdfc_mf
+    doc_type: factsheet
+    schemes: [hdfc_large_cap, hdfc_flexi_cap, hdfc_elss_tax_saver, hdfc_mid_cap, hdfc_liquid]
+    fetch: manual
+    file: hdfc_factsheet.pdf
+
+  - id: hdfc_ter
+    url: "https://files.hdfcfund.com/s3fs-public/ter/HDFCMF_SCHEMES_TER_16-11-2026.xls?VersionId=lVgNkGHNpcOYmaoig2FpBeOepn_PPsnN"
+    publisher: hdfc_mf
+    doc_type: fees
+    schemes: [hdfc_large_cap, hdfc_flexi_cap, hdfc_elss_tax_saver, hdfc_mid_cap, hdfc_liquid]
+    fetch: manual
+    # The site's daily TER download. Despite the ".xls" name it is an .xlsx workbook; only the
+    # latest date per scheme is ingested.
+    file: hdfc_ter.xls
+
+  - id: hdfc_statements
+    # From the saved page's <link rel="canonical">.
+    url: https://www.hdfcfund.com/learn/blog/how-get-capital-gain-statement-mutual-fund-schemes-india
+    publisher: hdfc_mf
+    doc_type: statement_guide
+    schemes: [general]
+    fetch: manual
+    file: hdfc_statements.html
+
+  # --- HDFC Mutual Fund document hosted by AMFI: automated ----------------------------------
+  - id: hdfc_sai
+    url: https://portal.amfiindia.com/spages/sai9.pdf
+    publisher: hdfc_mf
+    doc_type: sai
+    schemes: [hdfc_large_cap, hdfc_flexi_cap, hdfc_elss_tax_saver, hdfc_mid_cap, hdfc_liquid]
+    fetch: auto
+    # Riskometer; how to buy, SIP, redemption, exit load, statements; charges and disclosures.
+    pages: [[46, 52], [55, 82], [160, 170]]
+
+  # --- SEBI: automated ---------------------------------------------------------------------
+  - id: sebi_mf_faq
+    url: https://www.sebi.gov.in/sebi_data/faqfiles/sep-2024/1727242783639.pdf
+    publisher: sebi
+    doc_type: faq
+    schemes: [general]
+    fetch: auto
+
+  - id: sebi_investor_charter
+    url: https://investor.sebi.gov.in/pdf/investor-charter/mf_amc_amfi.pdf
+    publisher: sebi
+    doc_type: regulation
+    schemes: [general]
+    fetch: auto
+
+  - id: sebi_riskometer
+    url: https://investor.sebi.gov.in/riskometer.html
+    publisher: sebi
+    doc_type: education
+    schemes: [general]
+    fetch: auto
+
+  # --- AMFI: automated ---------------------------------------------------------------------
+  - id: amfi_categorisation
+    url: https://www.amfiindia.com/investor/knowledge-center-info?zoneName=CategorizationOfMutualFundSchemes
+    publisher: amfi
+    doc_type: education
+    schemes: [general]
+    fetch: auto
+
+  - id: amfi_risk
+    url: https://www.amfiindia.com/investor/knowledge-center-info?zoneName=riskInMutualFunds
+    publisher: amfi
+    doc_type: education
+    schemes: [general]
+    fetch: auto
+
+  - id: amfi_scheme_types
+    url: https://www.amfiindia.com/investor/knowledge-center-info?zoneName=TypesOfMutualFundSchemes
+    publisher: amfi
+    doc_type: education
+    schemes: [general]
+    fetch: auto

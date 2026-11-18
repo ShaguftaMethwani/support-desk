@@ -22,3 +22,6 @@ dist/
 backend/corpus/raw/
 *.sqlite3
 .DS_Store
+
+# Downloaded embedding model (fastembed)
+backend/.cache/

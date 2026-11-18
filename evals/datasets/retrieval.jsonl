@@ -1,0 +1,26 @@
+{"id": "r01", "question": "What is the lock-in period for ELSS funds?", "scheme": null, "expect_sources": ["amfi_categorisation"], "expect_phrase": "lock-in period of 3 years"}
+{"id": "r02", "question": "What are the risk levels on the riskometer?", "scheme": null, "expect_sources": ["sebi_mf_faq", "sebi_riskometer"], "expect_phrase": "Low to Moderate"}
+{"id": "r03", "question": "By when do I get my consolidated account statement each month?", "scheme": null, "expect_sources": ["sebi_investor_charter", "hdfc_sai"], "expect_phrase": "15th of succeeding month"}
+{"id": "r04", "question": "What is an exit load?", "scheme": null, "expect_sources": ["sebi_mf_faq"], "expect_phrase": "exit load"}
+{"id": "r05", "question": "Do mutual funds still charge an entry load?", "scheme": null, "expect_sources": ["sebi_mf_faq"], "expect_phrase": "abolished"}
+{"id": "r06", "question": "Is stamp duty charged when I buy mutual fund units?", "scheme": null, "expect_sources": ["hdfc_sai"], "expect_phrase": "stamp duty"}
+{"id": "r07", "question": "What is the minimum SIP amount for HDFC ELSS Tax Saver?", "scheme": "hdfc_elss_tax_saver", "expect_sources": ["hdfc_sai"], "expect_phrase": "multiples of Rs. 500"}
+{"id": "r08", "question": "What is the minimum daily SIP for HDFC Flexi Cap Fund online?", "scheme": "hdfc_flexi_cap", "expect_sources": ["hdfc_sai"], "expect_phrase": "Daily | 20 | 30"}
+{"id": "r09", "question": "How much of an ELSS fund must be invested in equity?", "scheme": null, "expect_sources": ["amfi_categorisation"], "expect_phrase": "at least 80%"}
+{"id": "r10", "question": "What maturity securities can a liquid fund hold?", "scheme": null, "expect_sources": ["amfi_categorisation", "amfi_scheme_types", "hdfc_liquid_kim"], "expect_phrase": "91 days"}
+{"id": "r11", "question": "How do I file a complaint against a mutual fund?", "scheme": null, "expect_sources": ["sebi_investor_charter", "sebi_mf_faq"], "expect_phrase": "SCORES"}
+{"id": "r12", "question": "What is the NAV of a mutual fund scheme?", "scheme": null, "expect_sources": ["sebi_mf_faq", "sebi_investor_charter"], "expect_phrase": "Net Asset Value"}
+{"id": "r13", "question": "How long does it take to cancel an SIP?", "scheme": null, "expect_sources": ["hdfc_sai"], "expect_phrase": "2 working days"}
+{"id": "r14", "question": "Are transaction charges deducted from my investment amount?", "scheme": null, "expect_sources": ["hdfc_sai"], "expect_phrase": "transaction charges"}
+{"id": "r15", "question": "Under which section is ELSS eligible for a tax deduction?", "scheme": null, "expect_sources": ["amfi_categorisation", "sebi_mf_faq"], "expect_phrase": "80C"}
+{"id": "r16", "question": "What does Very High risk on the riskometer mean?", "scheme": null, "expect_sources": ["sebi_riskometer", "sebi_mf_faq"], "expect_phrase": "Very High"}
+{"id": "r17", "question": "Can mutual fund units held in demat form be transferred?", "scheme": null, "expect_sources": ["hdfc_sai", "amfi_categorisation"], "expect_phrase": "demat"}
+{"id": "r18", "question": "What rights do mutual fund investors have?", "scheme": null, "expect_sources": ["sebi_investor_charter"], "expect_phrase": "Right to"}
+{"id": "r19", "question": "What is the expense ratio of HDFC Large Cap Fund Direct Plan?", "scheme": "hdfc_large_cap", "expect_sources": ["hdfc_ter", "hdfc_factsheet", "hdfc_large_cap_kim"], "expect_phrase": null}
+{"id": "r20", "question": "What is the exit load on HDFC Liquid Fund?", "scheme": "hdfc_liquid", "expect_sources": ["hdfc_liquid_kim", "hdfc_factsheet"], "expect_phrase": null}
+{"id": "r21", "question": "What is the benchmark of HDFC Mid Cap Fund?", "scheme": "hdfc_mid_cap", "expect_sources": ["hdfc_mid_cap_kim", "hdfc_factsheet"], "expect_phrase": null}
+{"id": "r22", "question": "What is the riskometer level of HDFC Flexi Cap Fund?", "scheme": "hdfc_flexi_cap", "expect_sources": ["hdfc_flexi_cap_kim", "hdfc_factsheet"], "expect_phrase": null, "expect_not_covered": true}
+{"id": "r23", "question": "What is the exit load on HDFC Flexi Cap Fund?", "scheme": "hdfc_flexi_cap", "expect_sources": ["hdfc_flexi_cap_kim", "hdfc_factsheet"], "expect_phrase": null}
+{"id": "r24", "question": "What is the benchmark of HDFC Large Cap Fund?", "scheme": "hdfc_large_cap", "expect_sources": ["hdfc_large_cap_kim", "hdfc_factsheet"], "expect_phrase": null}
+{"id": "r25", "question": "How do I download my capital gains statement from HDFC Mutual Fund?", "scheme": null, "expect_sources": ["hdfc_statements"], "expect_phrase": null}
+{"id": "r26", "question": "What is the minimum lumpsum investment in HDFC Mid Cap Fund?", "scheme": "hdfc_mid_cap", "expect_sources": ["hdfc_mid_cap_kim", "hdfc_factsheet"], "expect_phrase": null}

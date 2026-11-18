@@ -128,29 +128,37 @@ Phase 3 needs Phase 2's retriever only for the fee explainer. Clustering can sta
 **Goal:** the Milestone 1 corpus rebuilt as a clean, tagged, searchable store, and a Facts Agent that answers only from it.
 
 ### Tasks: source list
-- [ ] **Write `backend/corpus/sources.yaml`** with about 20 entries, following the problem statement corpus plan:
+- [x] **Write `backend/corpus/sources.yaml`** with about 20 entries, following the problem statement corpus plan:
   - HDFC Mutual Fund, 12–14 entries. For each of the 5 schemes: the scheme page, KIM or SID, and the latest factsheet. Plus the TER disclosure page, the exit load or charges page, the statement and capital-gains guides, and the investor FAQ.
   - SEBI, 3–4 entries: the investor charter, the riskometer circular, the categorisation circular and the TER rules.
   - AMFI, 3–4 entries: investor education pages on SIP, ELSS, exit load, expense ratio and the riskometer.
   - Each entry holds `url, publisher, doc_type, schemes[]`.
-- [ ] **Confirm the scheme names** against the current SIDs, as the problem statement asks. Update both documents if any name changed.
+- [x] **Confirm the scheme names** against the current SIDs, as the problem statement asks. Update both documents if any name changed.
 
 ### Tasks: ingestion pipeline
-- [ ] **Fetcher.** Uses `httpx` with a domain allow-list. It refuses any URL outside `hdfcfund.com`, `sebi.gov.in`, `amfiindia.com` and the INDMoney help domain. Raw downloads are cached locally so re-runs don't re-download.
-- [ ] **Parsers.** `pdfplumber` for PDFs, keeping tables as rows. `readability-lxml` or `trafilatura` for HTML.
-- [ ] **Chunker.** About 400 tokens with 50 overlap. Never splits a table row. Keeps the section heading in each chunk.
-- [ ] **Metadata tagger.** Sets scheme, doc type, publisher, section and `fetched_at`. Tags INDMoney pages as `platform_process`.
-- [ ] **Embedder.** fastembed with `BAAI/bge-small-en-v1.5`. Stores vectors in `corpus_chunk.embedding`.
-- [ ] **CLI command** `python -m corpus.ingest` loads everything. A `--refresh` flag re-fetches and updates `fetched_at`.
+- [x] **Fetcher.** Uses `httpx` with a domain allow-list. It refuses any URL outside `hdfcfund.com`, `sebi.gov.in`, `amfiindia.com` and the INDMoney help domain. Raw downloads are cached locally so re-runs don't re-download.
+- [x] **Parsers.** `pdfplumber` for PDFs, keeping tables as rows. `readability-lxml` or `trafilatura` for HTML.
+- [x] **Chunker.** About 400 tokens with 50 overlap. Never splits a table row. Keeps the section heading in each chunk.
+- [x] **Metadata tagger.** Sets scheme, doc type, publisher, section and `fetched_at`. Tags INDMoney pages as `platform_process`.
+- [x] **Embedder.** fastembed with `BAAI/bge-small-en-v1.5`. Stores vectors in `corpus_chunk.embedding`.
+- [x] **CLI command** `python -m corpus.ingest` loads everything. A `--refresh` flag re-fetches and updates `fetched_at`.
 
 ### Tasks: retrieval and Facts Agent (`backend/app/agents/facts.py`)
-- [ ] **Hybrid retrieval.** Postgres full-text search (BM25-like) plus pgvector cosine similarity, merged with reciprocal rank fusion. Filtered by the scheme slot when one is known. INDMoney chunks are excluded unless the intent is a platform process question.
-- [ ] **Facts Agent.**
+- [x] **Hybrid retrieval.** Postgres full-text search (BM25-like) plus pgvector cosine similarity, merged with reciprocal rank fusion. Filtered by the scheme slot when one is known. INDMoney chunks are excluded unless the intent is a platform process question.
+- [x] **Facts Agent.**
   - Takes the top 3–4 chunks and calls the large Groq model with a strict "answer only from these passages" prompt. Uses JSON mode to return `{answer, chunk_id}` or `{not_covered: true}`.
   - **Number check:** every number in the answer must appear in the cited chunk's text. Otherwise the result becomes `not_covered`.
   - Low retrieval scores give `not_covered` without a model call.
   - Fills `searched` with the queries, filters and top chunk ids for every result.
-- [ ] **Retrieval test set** of 25 questions with the expected chunk or source, covering all 5 schemes and the common facts: expense ratio, exit load, minimum SIP, lock-in, riskometer, benchmark and statements.
+- [x] **Retrieval test set** of 25 questions with the expected chunk or source, covering all 5 schemes and the common facts: expense ratio, exit load, minimum SIP, lock-in, riskometer, benchmark and statements.
+
+### Status (November 2026)
+- **Automated sources ingested:** SEBI (3), AMFI (3), and HDFC's Statement of Additional Information from AMFI's portal. 7 sources, 226 chunks.
+- **Manual sources pending:** 8 HDFC documents. hdfcfund.com blocks automated requests, so they are downloaded by hand. See `backend/corpus/manual/README.md`.
+- **Scheme names confirmed** against AMFI's scheme master data. AMFI lists the ELSS fund as "HDFC ELSS - Tax Saver Fund", kept as an alias.
+- **Retrieval test set:** 26 questions, 18 answerable now: 18 of 18 hits in the top 4. The other 8 run once the HDFC documents are in.
+- **Facts Agent:** 18 of 18 answered with a correct citation, and 5 of 5 off-topic questions returned as "not covered" with search details.
+- **Not done:** the optional early deploy to check memory on Render.
 
 ### Exit check
 - The corpus loads with 15–25 sources, and every chunk has a scheme tag (or "general") and a `fetched_at` date.

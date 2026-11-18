@@ -44,3 +44,16 @@ uv run ruff check . && uv run mypy   # lint and type checks
 ```
 
 Database tests skip when no database is reachable. Set `REQUIRE_DB=1` to make that a failure.
+
+## Corpus
+
+From `backend/`:
+
+```bash
+uv run python -m corpus.ingest           # fetch, parse, chunk, embed and store every ready source
+uv run python -m corpus.ingest --list    # the source list as a Markdown table
+uv run python ../evals/run_retrieval.py  # retrieval test set (top-4 hit rate)
+uv run python ../evals/run_facts.py      # Facts Agent test set (uses Groq, cached)
+```
+
+HDFC documents must be downloaded by hand first. See [backend/corpus/manual/README.md](backend/corpus/manual/README.md).

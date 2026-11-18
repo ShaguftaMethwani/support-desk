@@ -70,7 +70,8 @@ def configure_logging(level: str = "INFO", json_logs: bool = True) -> None:
         wrapper_class=structlog.make_filtering_bound_logger(
             logging.getLevelNamesMapping().get(level.upper(), logging.INFO)
         ),
-        cache_logger_on_first_use=True,
+        # Not cached, so structlog.testing.capture_logs() works in every test.
+        cache_logger_on_first_use=False,
     )
 
 

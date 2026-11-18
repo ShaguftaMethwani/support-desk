@@ -134,7 +134,7 @@ flowchart TB
 | **Frontend** | React with Vite and TypeScript, Tailwind CSS | Fast to build six views. Easy static hosting. |
 | **Backend** | Python 3.12 with FastAPI | Native async, so the three agents run with `asyncio.gather`. Python has the best tooling for embeddings and clustering. |
 | **Database** | Postgres 16 with pgvector | One store for corpus vectors, queue state, themes, approvals and audit records. Transactions make the "one approval, one action" rule enforceable. |
-| **Embeddings** | `BAAI/bge-small-en-v1.5` via **fastembed** (ONNX runtime, no PyTorch) | Free and runs locally. Uses roughly 150–250 MB of memory, against well over 1 GB for the PyTorch-based sentence-transformers. Groq does not offer embeddings, so this stays local. |
+| **Embeddings** | `BAAI/bge-small-en-v1.5` via **fastembed** (ONNX runtime, no PyTorch), with bge's query instruction prefix | Free and runs locally. Uses roughly 150–250 MB of memory, against well over 1 GB for the PyTorch-based sentence-transformers. Groq does not offer embeddings, so this stays local. |
 | **LLM** | **Groq API** behind an adapter. OpenAI's open-weight gpt-oss models: the 120B model for drafting and the 20B model for classification. Both are reasoning models, run at low reasoning effort. See section 4.1. | Free tier, very fast inference and an OpenAI-compatible API, so the adapter is a thin wrapper around the `openai` Python client. |
 | **Speech-to-text** | **Groq-hosted Whisper** (`whisper-large-v3-turbo`) | Free tier and very fast. Needs no server memory, unlike self-hosting Whisper. The browser Web Speech API is a fallback for local development only. |
 | **Text-to-speech** | Browser `speechSynthesis` | No server round trip and no audio stored. |
@@ -208,6 +208,9 @@ flowchart LR
 
 - **`sources.yaml`** is the single source list. Each entry has a URL, a publisher (HDFC MF, SEBI, AMFI or INDMoney help), a document type, and the schemes it covers. The README source list is generated from this file.
 - **Allow-list.** The fetcher refuses any domain not on the allow-list: `hdfcfund.com`, `sebi.gov.in`, `amfiindia.com`, and the INDMoney help-centre domain. This enforces "public sources only" in code.
+- **Polite, honest fetching.** The fetcher respects robots.txt, identifies itself with an honest user agent, waits a second between requests to a host, and caches downloads. It verifies certificates against the operating system's trust store, because several SEBI and AMFI hosts don't verify against Python's bundled certificates.
+- **Manual sources.** hdfcfund.com and indmoney.com block automated requests. The pipeline does not try to get around that. HDFC documents are downloaded by hand and recorded with their real URL, and a manual source is skipped until both its file and its URL are present. HDFC's Statement of Additional Information is fetched automatically from AMFI's portal, which hosts it.
+- **Parsing.** Two-column PDF pages are detected by finding the vertical gap that no words cross, and read one column at a time. Repeated page headers and footers are removed. Numbered FAQ questions become section headings.
 - **`fetched_at`** on every chunk becomes the `Last checked` date shown in replies and the sources panel.
 - **Scheme tagging** lets retrieval filter by scheme. That prevents "HDFC Mid Cap" questions from being answered with Large Cap facts.
 - **INDMoney help pages** are tagged `platform_process`. The Facts Agent may cite them only for in-app process questions, never for scheme facts.
@@ -404,7 +407,9 @@ class FactsResult(BaseModel):
     citation: Citation | None       # chunk_id, url, title, last_checked
     searched: list[SearchTrace]     # queries run, scheme filter, top chunk ids and scores
 ```
-- Hybrid retrieval: BM25 plus vector similarity, filtered by the scheme slot, then reranked.
+- Hybrid retrieval: candidates are the union of the top vector matches and the top full-text matches, filtered by the scheme slot. Each is scored by cosine similarity, plus a small boost (+0.03 for a top-3 keyword match, +0.015 for top 10). Plain reciprocal rank fusion scored 83% on the retrieval test set because the keyword query matched common words in many chunks. Vector-first scored 100%.
+- A cosine similarity below 0.65 means "not covered" without a model call. On the test set, answerable questions scored at least 0.72 and off-topic ones at most 0.60.
+- The model cites a passage number, never a URL. Code maps the number to the chunk and its source.
 - If the top score is below a threshold, or the model can't answer from the retrieved chunks alone, the result is `not_covered`, with `searched` filled in.
 - The prompt forbids general knowledge. A post-check confirms that every number in the answer appears in the cited chunk text. If one doesn't, the result becomes `not_covered`.
 
@@ -910,6 +915,7 @@ grad-proj/
 
 ## 20. Known Limits
 
+- **Conflicting official sources.** SEBI's riskometer page describes five risk categories, while SEBI's mutual fund FAQ lists six, including Very High. The system cites whichever passage it retrieves.
 - **Corpus coverage** is limited to 5 HDFC schemes and about 20 pages. Questions about other AMCs or schemes return "not covered".
 - **Scheme documents go stale.** `Last checked` dates are shown, but the system doesn't re-fetch automatically between manual refreshes.
 - **Keyword guards** can block legitimate phrasing, such as "you should receive your statement by email". The false positive rate is tracked in the evals, and the reviewer flag shows which rule fired.

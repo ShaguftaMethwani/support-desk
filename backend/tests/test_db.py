@@ -65,7 +65,10 @@ async def test_full_text_and_vector_columns_work(engine: AsyncEngine) -> None:
     sessions = async_sessionmaker(engine, expire_on_commit=False)
     async with sessions() as s:
         source = CorpusSource(
-            url=f"https://example.test/{uuid.uuid4()}", publisher="amfi", doc_type="test"
+            key=f"test_{uuid.uuid4().hex[:8]}",
+            url=f"https://example.test/{uuid.uuid4()}",
+            publisher="amfi",
+            doc_type="test",
         )
         s.add(source)
         await s.flush()

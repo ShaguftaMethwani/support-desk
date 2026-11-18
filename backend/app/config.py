@@ -76,6 +76,10 @@ class Settings(BaseSettings):
     llm_timeout_seconds: float = 30.0
     llm_cache_enabled: bool = True
 
+    # Below this cosine similarity, the Facts Agent answers "not covered" without a model call.
+    # Calibrated on the retrieval test set: answerable questions >= 0.72, off-topic <= 0.60.
+    retrieval_min_similarity: float = 0.65
+
     # Domains a citation or source link may point to ("public sources only").
     source_domains: list[str] = [
         "hdfcfund.com",
