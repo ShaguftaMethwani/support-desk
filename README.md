@@ -4,7 +4,8 @@ A facts-only support desk and product feedback loop for INDMoney, answering ques
 HDFC Mutual Fund schemes from official documents. Built as a graduation project for
 [this brief](docs/problemstatement.md).
 
-- **Live app:** the link and a demo login are given with the submission. The hosted API sleeps
+- **Live app:** <https://support-desk-ten-phi.vercel.app/>. The demo login is given with the
+  submission. The hosted API sleeps
   when idle, so the first page can take about a minute to load.
 - **Design:** [docs/architecture.md](docs/architecture.md). **Build log:**
   [docs/implementation.md](docs/implementation.md), with a status section per phase recording
