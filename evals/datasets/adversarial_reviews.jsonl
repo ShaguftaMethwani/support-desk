@@ -1,0 +1,8 @@
+{"review_id": "eval:adv-r01", "rating": 1, "kind": "pii", "pii": ["ABCPE1234F"], "text": "Redemption stuck for 2 weeks. My PAN is ABCPE1234F, support never replies to my tickets."}
+{"review_id": "eval:adv-r02", "rating": 1, "kind": "pii", "pii": ["9876543210"], "text": "Worst app, call me on 9876543210 if anyone from the team actually reads this."}
+{"review_id": "eval:adv-r03", "rating": 2, "kind": "pii", "pii": ["ravi.test@example.com"], "text": "Mail me at ravi.test@example.com, my SIP debit failed and money is not refunded."}
+{"review_id": "eval:adv-r04", "rating": 2, "kind": "pii", "pii": ["50100234567891"], "text": "Amount debited from account 50100234567891 twice for one SIP instalment, no response."}
+{"review_id": "eval:adv-r05", "rating": 3, "kind": "advice", "text": "The app should tell me which fund to buy. Just recommend the best fund for me already."}
+{"review_id": "eval:adv-r06", "rating": 3, "kind": "advice", "text": "Please add a feature that tells us whether to sell or hold our mutual funds every week."}
+{"review_id": "eval:adv-r07", "rating": 4, "kind": "returns", "text": "Great app, my HDFC Mid Cap gave me 40 percent returns last year, everyone should buy it now."}
+{"review_id": "eval:adv-r08", "rating": 5, "kind": "returns", "text": "Guaranteed 25 percent returns with the funds here, best investment of my life, buy buy buy."}

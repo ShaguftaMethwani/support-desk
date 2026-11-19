@@ -1,0 +1,1501 @@
+{
+  "generated_at": "2026-11-19T11:16:30",
+  "options": {
+    "fresh": false,
+    "reseed": false,
+    "filter": null
+  },
+  "summary": {
+    "voice_intent": {
+      "passed": 55
+    },
+    "multi_question": {
+      "passed": 18,
+      "failed": 2
+    },
+    "loop_connection": {
+      "passed": 3
+    },
+    "edit_correctness": {
+      "passed": 7
+    },
+    "feasibility": {
+      "passed": 26
+    },
+    "grounding_compliance": {
+      "passed": 56
+    }
+  },
+  "metrics": {
+    "intent_accuracy": {
+      "correct": 40,
+      "total": 40,
+      "accuracy": 1.0,
+      "labels": [
+        "advice",
+        "complaint",
+        "factual",
+        "fee_canonical",
+        "out_of_scope",
+        "returns",
+        "unclear"
+      ],
+      "confusion": {
+        "advice->advice": 12,
+        "complaint->complaint": 3,
+        "factual->factual": 14,
+        "fee_canonical->fee_canonical": 1,
+        "out_of_scope->out_of_scope": 2,
+        "returns->returns": 6,
+        "unclear->unclear": 2
+      }
+    },
+    "voice_word_accuracy": {
+      "clips": 10,
+      "mean": 0.98,
+      "per_clip": {
+        "v01": {
+          "word_accuracy": 1.0,
+          "transcript": "Should I invest in HDFC mid cap fund now?"
+        },
+        "v02": {
+          "word_accuracy": 1.0,
+          "transcript": "Shall I redeem my HDFC ELSS units after the lock-in ends?"
+        },
+        "v03": {
+          "word_accuracy": 1.0,
+          "transcript": "What returns did HDFC Large Cap Fund give last year?"
+        },
+        "v04": {
+          "word_accuracy": 1.0,
+          "transcript": "What is the 5-year CAGR of HDFC Mid Cap Fund?"
+        },
+        "v05": {
+          "word_accuracy": 0.89,
+          "transcript": "What is the exit load HDFC liquid fund?"
+        },
+        "v06": {
+          "word_accuracy": 0.91,
+          "transcript": "What is the lock-in period or HDFC ELSS Tax Saver?"
+        },
+        "v07": {
+          "word_accuracy": 1.0,
+          "transcript": "What is the riskometer level of HDFC Flexi Cap Fund?"
+        },
+        "v08": {
+          "word_accuracy": 1.0,
+          "transcript": "What is the expense ratio of the Direct Plan of HDFC Large Cap Fund?"
+        },
+        "v09": {
+          "word_accuracy": 1.0,
+          "transcript": "My redemption from HDFC mid-cap fund has not arrived for 10 days."
+        },
+        "v10": {
+          "word_accuracy": 1.0,
+          "transcript": "Why was money deducted when I redeemed my liquid fund units?"
+        }
+      }
+    },
+    "multi_reject_diff": {
+      "queue_item": {
+        "added": 0,
+        "removed": 0,
+        "changed": 1
+      }
+    },
+    "loop_canonical": {
+      "fee_type": "expense_ratio",
+      "reuse_before": 0,
+      "reuse_after": 1,
+      "related_source_type": "canonical_explainer",
+      "unrelated_source_type": "corpus"
+    },
+    "edit_diff": {
+      "draft_version": {
+        "added": 1,
+        "removed": 0,
+        "changed": 0
+      },
+      "review_result": {
+        "added": 1,
+        "removed": 0,
+        "changed": 0
+      }
+    },
+    "approve_draft_diff": {
+      "pending_action": {
+        "added": 2,
+        "removed": 0,
+        "changed": 0
+      },
+      "queue_item": {
+        "added": 0,
+        "removed": 0,
+        "changed": 1
+      }
+    },
+    "approve_action_diff": {
+      "approval": {
+        "added": 1,
+        "removed": 0,
+        "changed": 0
+      },
+      "pending_action": {
+        "added": 0,
+        "removed": 0,
+        "changed": 1
+      }
+    },
+    "drafts_by_source_type": {
+      "refusal": 35,
+      "corpus": 54,
+      "not_covered": 34,
+      "canonical_explainer": 1,
+      "clarification": 2
+    },
+    "not_covered_rate": 0.27,
+    "pulse_words": {
+      "reported": 249,
+      "counted": 246
+    },
+    "unrefused_advice_or_returns": 0,
+    "not_covered_set": {
+      "correct": 11,
+      "total": 11
+    },
+    "claims": [
+      {
+        "loop": "weekly",
+        "kind": "theme",
+        "claim": "App usability and feature reliability issues",
+        "problems": []
+      },
+      {
+        "loop": "weekly",
+        "kind": "quote",
+        "claim": "Stock trade executed notification ( push notifications) not working at all. After many complaints an",
+        "problems": []
+      },
+      {
+        "loop": "weekly",
+        "kind": "theme",
+        "claim": "Exit load on redemption",
+        "problems": []
+      },
+      {
+        "loop": "weekly",
+        "kind": "explainer_bullet",
+        "claim": "The expense ratio is the annual fund operating cost expressed as a percentage of the fund\u2019s daily ne",
+        "problems": []
+      },
+      {
+        "loop": "weekly",
+        "kind": "explainer_bullet",
+        "claim": "A Direct Plan typically has a lower expense ratio than the Regular Plan because it does not include ",
+        "problems": []
+      },
+      {
+        "loop": "weekly",
+        "kind": "quote",
+        "claim": "very good investment app the only drawback is it does not have FD or bonds if they are included it w",
+        "problems": []
+      },
+      {
+        "loop": "response",
+        "kind": "draft",
+        "claim": "Sure, we will email you the HDFC Mid Cap Fund factsheet.\nSource: https://files.hdfcfund.com/s3fs-pub",
+        "problems": []
+      },
+      {
+        "loop": "response",
+        "kind": "draft",
+        "claim": "The exit load for HDFC liquid fund is 0.0070% of redemption proceeds on Day 1, decreasing to 0.0065%",
+        "problems": []
+      },
+      {
+        "loop": "response",
+        "kind": "draft",
+        "claim": "Submit the redemption request by 3 p.m. on a Business Day to receive the same\u2011day closing NAV.\nSourc",
+        "problems": []
+      },
+      {
+        "loop": "response",
+        "kind": "draft",
+        "claim": "The scheme has a statutory lock\u2011in period of 3 years.\nSource: https://files.hdfcfund.com/s3fs-public",
+        "problems": []
+      },
+      {
+        "loop": "response",
+        "kind": "draft",
+        "claim": "The exit load is 0.0070% of redemption proceeds on Day 1, decreasing to 0.0065% on Day 2, 0.0060% on",
+        "problems": []
+      },
+      {
+        "loop": "response",
+        "kind": "draft",
+        "claim": "The scheme has a statutory lock\u2011in period of 3 years.\nSource: https://files.hdfcfund.com/s3fs-public",
+        "problems": []
+      },
+      {
+        "loop": "response",
+        "kind": "draft",
+        "claim": "Growth funds are schemes designed to provide capital appreciation. They primarily invest in growth\u2011o",
+        "problems": []
+      },
+      {
+        "loop": "response",
+        "kind": "draft",
+        "claim": "The exit load is 1.00% if units are redeemed or switched out within 1 year from the date of allotmen",
+        "problems": []
+      },
+      {
+        "loop": "response",
+        "kind": "draft",
+        "claim": "The scheme has a statutory lock\u2011in period of 3 years.\nSource: https://files.hdfcfund.com/s3fs-public",
+        "problems": []
+      }
+    ],
+    "pii_scan": {
+      "values_checked": 10988,
+      "known_values": 11,
+      "hits": 0
+    },
+    "groq_calls": {
+      "real_by_model": {
+        "openai/gpt-oss-20b": 109,
+        "openai/gpt-oss-120b": 14
+      },
+      "cached_by_model": {
+        "openai/gpt-oss-120b": 197,
+        "openai/gpt-oss-20b": 31
+      },
+      "real_total": 123,
+      "cached_total": 228,
+      "real_by_task": {
+        "intent": 109,
+        "orchestrate": 8,
+        "review_judge": 6
+      },
+      "whisper": 24,
+      "fallback_events": 0,
+      "rate_limit_events": 0
+    },
+    "reviewer": {
+      "reviews": 179,
+      "by_rule": {
+        "advice_guard": {
+          "failed": 1,
+          "checked": 179,
+          "rate": 0.006
+        },
+        "advice_judge": {
+          "failed": 0,
+          "checked": 59,
+          "rate": 0.0
+        },
+        "citation_required": {
+          "failed": 0,
+          "checked": 179,
+          "rate": 0.0
+        },
+        "last_checked_present": {
+          "failed": 0,
+          "checked": 179,
+          "rate": 0.0
+        },
+        "length_caps": {
+          "failed": 0,
+          "checked": 179,
+          "rate": 0.0
+        },
+        "pii_guard": {
+          "failed": 0,
+          "checked": 179,
+          "rate": 0.0
+        },
+        "returns_guard": {
+          "failed": 0,
+          "checked": 179,
+          "rate": 0.0
+        }
+      }
+    }
+  },
+  "cases": [
+    {
+      "suite": "voice_intent",
+      "id": "test_intent[i01]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.6
+    },
+    {
+      "suite": "voice_intent",
+      "id": "test_intent[i02]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.0
+    },
+    {
+      "suite": "voice_intent",
+      "id": "test_intent[i03]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.0
+    },
+    {
+      "suite": "voice_intent",
+      "id": "test_intent[i04]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.0
+    },
+    {
+      "suite": "voice_intent",
+      "id": "test_intent[i05]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.0
+    },
+    {
+      "suite": "voice_intent",
+      "id": "test_intent[i06]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.0
+    },
+    {
+      "suite": "voice_intent",
+      "id": "test_intent[i07]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.0
+    },
+    {
+      "suite": "voice_intent",
+      "id": "test_intent[i08]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.0
+    },
+    {
+      "suite": "voice_intent",
+      "id": "test_intent[i09]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.0
+    },
+    {
+      "suite": "voice_intent",
+      "id": "test_intent[i10]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.0
+    },
+    {
+      "suite": "voice_intent",
+      "id": "test_intent[i11]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.0
+    },
+    {
+      "suite": "voice_intent",
+      "id": "test_intent[i12]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.0
+    },
+    {
+      "suite": "voice_intent",
+      "id": "test_intent[i13]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.0
+    },
+    {
+      "suite": "voice_intent",
+      "id": "test_intent[i14]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.0
+    },
+    {
+      "suite": "voice_intent",
+      "id": "test_intent[i15]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.0
+    },
+    {
+      "suite": "voice_intent",
+      "id": "test_intent[i16]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.0
+    },
+    {
+      "suite": "voice_intent",
+      "id": "test_intent[i17]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.0
+    },
+    {
+      "suite": "voice_intent",
+      "id": "test_intent[i18]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.0
+    },
+    {
+      "suite": "voice_intent",
+      "id": "test_intent[i19]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.5
+    },
+    {
+      "suite": "voice_intent",
+      "id": "test_intent[i20]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.5
+    },
+    {
+      "suite": "voice_intent",
+      "id": "test_intent[i21]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.2
+    },
+    {
+      "suite": "voice_intent",
+      "id": "test_intent[i22]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.4
+    },
+    {
+      "suite": "voice_intent",
+      "id": "test_intent[i23]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.3
+    },
+    {
+      "suite": "voice_intent",
+      "id": "test_intent[i24]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.4
+    },
+    {
+      "suite": "voice_intent",
+      "id": "test_intent[i25]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.5
+    },
+    {
+      "suite": "voice_intent",
+      "id": "test_intent[i26]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.4
+    },
+    {
+      "suite": "voice_intent",
+      "id": "test_intent[i27]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.5
+    },
+    {
+      "suite": "voice_intent",
+      "id": "test_intent[i28]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 1.5
+    },
+    {
+      "suite": "voice_intent",
+      "id": "test_intent[i29]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.5
+    },
+    {
+      "suite": "voice_intent",
+      "id": "test_intent[i30]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 1.4
+    },
+    {
+      "suite": "voice_intent",
+      "id": "test_intent[i31]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.5
+    },
+    {
+      "suite": "voice_intent",
+      "id": "test_intent[i32]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.5
+    },
+    {
+      "suite": "voice_intent",
+      "id": "test_intent[i33]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.3
+    },
+    {
+      "suite": "voice_intent",
+      "id": "test_intent[i34]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.5
+    },
+    {
+      "suite": "voice_intent",
+      "id": "test_intent[i35]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.5
+    },
+    {
+      "suite": "voice_intent",
+      "id": "test_intent[i36]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.3
+    },
+    {
+      "suite": "voice_intent",
+      "id": "test_intent[i37]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.4
+    },
+    {
+      "suite": "voice_intent",
+      "id": "test_intent[i38]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.4
+    },
+    {
+      "suite": "voice_intent",
+      "id": "test_intent[i39]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 1.0
+    },
+    {
+      "suite": "voice_intent",
+      "id": "test_intent[i40]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.5
+    },
+    {
+      "suite": "voice_intent",
+      "id": "test_intent_accuracy",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.0
+    },
+    {
+      "suite": "voice_intent",
+      "id": "test_voice_parity[v01]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.4
+    },
+    {
+      "suite": "voice_intent",
+      "id": "test_voice_parity[v02]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.3
+    },
+    {
+      "suite": "voice_intent",
+      "id": "test_voice_parity[v03]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.3
+    },
+    {
+      "suite": "voice_intent",
+      "id": "test_voice_parity[v04]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.3
+    },
+    {
+      "suite": "voice_intent",
+      "id": "test_voice_parity[v05]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.8
+    },
+    {
+      "suite": "voice_intent",
+      "id": "test_voice_parity[v06]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.7
+    },
+    {
+      "suite": "voice_intent",
+      "id": "test_voice_parity[v07]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.3
+    },
+    {
+      "suite": "voice_intent",
+      "id": "test_voice_parity[v08]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.3
+    },
+    {
+      "suite": "voice_intent",
+      "id": "test_voice_parity[v09]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 1.5
+    },
+    {
+      "suite": "voice_intent",
+      "id": "test_voice_parity[v10]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.3
+    },
+    {
+      "suite": "voice_intent",
+      "id": "test_spoken_pii[p01]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 2.1
+    },
+    {
+      "suite": "voice_intent",
+      "id": "test_spoken_pii[p02]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 2.9
+    },
+    {
+      "suite": "voice_intent",
+      "id": "test_spoken_pii[p03]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 2.8
+    },
+    {
+      "suite": "voice_intent",
+      "id": "test_voice_summary",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.0
+    },
+    {
+      "suite": "multi_question",
+      "id": "test_typed[m01]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 3.1
+    },
+    {
+      "suite": "multi_question",
+      "id": "test_typed[m02]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 6.4
+    },
+    {
+      "suite": "multi_question",
+      "id": "test_typed[m03]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 2.3
+    },
+    {
+      "suite": "multi_question",
+      "id": "test_typed[m04]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 2.8
+    },
+    {
+      "suite": "multi_question",
+      "id": "test_typed[m05]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 6.5
+    },
+    {
+      "suite": "multi_question",
+      "id": "test_typed[m06]",
+      "outcome": "failed",
+      "message": "AssertionError: part 5: not_covered, expected answered\nassert not ['part 5: not_covered, expected answered']",
+      "seconds": 9.0
+    },
+    {
+      "suite": "multi_question",
+      "id": "test_typed[m07]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.0
+    },
+    {
+      "suite": "multi_question",
+      "id": "test_typed[m08]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 2.2
+    },
+    {
+      "suite": "multi_question",
+      "id": "test_typed[m09]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 6.3
+    },
+    {
+      "suite": "multi_question",
+      "id": "test_typed[m10]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 2.4
+    },
+    {
+      "suite": "multi_question",
+      "id": "test_typed[m11]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 6.5
+    },
+    {
+      "suite": "multi_question",
+      "id": "test_typed[m12]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 6.0
+    },
+    {
+      "suite": "multi_question",
+      "id": "test_typed[m13]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 2.4
+    },
+    {
+      "suite": "multi_question",
+      "id": "test_typed[m14]",
+      "outcome": "failed",
+      "message": "AssertionError: part 1: not_covered, expected answered\nassert not ['part 1: not_covered, expected answered']",
+      "seconds": 6.4
+    },
+    {
+      "suite": "multi_question",
+      "id": "test_typed[m15]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 2.7
+    },
+    {
+      "suite": "multi_question",
+      "id": "test_typed[m16]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 2.6
+    },
+    {
+      "suite": "multi_question",
+      "id": "test_spoken[m01]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 3.2
+    },
+    {
+      "suite": "multi_question",
+      "id": "test_spoken[m03]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 2.7
+    },
+    {
+      "suite": "multi_question",
+      "id": "test_spoken[m10]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.3
+    },
+    {
+      "suite": "multi_question",
+      "id": "test_rejecting_one_part_leaves_its_siblings",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.1
+    },
+    {
+      "suite": "loop_connection",
+      "id": "test_the_questions_form_one_surfaced_cluster",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.0
+    },
+    {
+      "suite": "loop_connection",
+      "id": "test_the_cluster_is_in_the_pulse",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.0
+    },
+    {
+      "suite": "loop_connection",
+      "id": "test_a_promoted_explainer_answers_related_questions",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.1
+    },
+    {
+      "suite": "edit_correctness",
+      "id": "test_edit_adds_a_version_and_its_review",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.1
+    },
+    {
+      "suite": "edit_correctness",
+      "id": "test_an_edit_that_fails_review_blocks_approval",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.1
+    },
+    {
+      "suite": "edit_correctness",
+      "id": "test_approving_a_draft_only_creates_its_two_actions",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.1
+    },
+    {
+      "suite": "edit_correctness",
+      "id": "test_approving_one_action_leaves_the_other_pending",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.4
+    },
+    {
+      "suite": "edit_correctness",
+      "id": "test_a_changed_payload_hash_is_refused",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.1
+    },
+    {
+      "suite": "edit_correctness",
+      "id": "test_rejecting_an_action_touches_only_it",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.1
+    },
+    {
+      "suite": "edit_correctness",
+      "id": "test_rejecting_an_item_touches_only_it",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.1
+    },
+    {
+      "suite": "feasibility",
+      "id": "test_complaint[play:e4f70dfa-318c-4]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.0
+    },
+    {
+      "suite": "feasibility",
+      "id": "test_complaint[play:1af7f3e9-921f-4]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.0
+    },
+    {
+      "suite": "feasibility",
+      "id": "test_complaint[play:6cf77e7b-e8c7-4]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.0
+    },
+    {
+      "suite": "feasibility",
+      "id": "test_complaint[play:f6ab15c3-54b1-4]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.0
+    },
+    {
+      "suite": "feasibility",
+      "id": "test_complaint[appstore:14789288212]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.0
+    },
+    {
+      "suite": "feasibility",
+      "id": "test_complaint[play:1c2aeee7-3415-4]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.0
+    },
+    {
+      "suite": "feasibility",
+      "id": "test_complaint[play:6741d9ac-9c8e-4]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.0
+    },
+    {
+      "suite": "feasibility",
+      "id": "test_complaint[appstore:14788109013]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.0
+    },
+    {
+      "suite": "feasibility",
+      "id": "test_complaint[play:bf9593d7-7233-4]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.0
+    },
+    {
+      "suite": "feasibility",
+      "id": "test_complaint[play:fc231f7b-ad4d-4]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.0
+    },
+    {
+      "suite": "feasibility",
+      "id": "test_complaint[play:95de2ba6-9332-4]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.0
+    },
+    {
+      "suite": "feasibility",
+      "id": "test_complaint[appstore:14772482915]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.0
+    },
+    {
+      "suite": "feasibility",
+      "id": "test_complaint[play:1ba8f192-4858-4]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.0
+    },
+    {
+      "suite": "feasibility",
+      "id": "test_complaint[play:23947bc7-2681-4]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.0
+    },
+    {
+      "suite": "feasibility",
+      "id": "test_complaint[play:46c5c306-0aff-4]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.0
+    },
+    {
+      "suite": "feasibility",
+      "id": "test_complaint[play:67f3764c-d274-4]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.0
+    },
+    {
+      "suite": "feasibility",
+      "id": "test_complaint[play:8073d38c-3119-4]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.0
+    },
+    {
+      "suite": "feasibility",
+      "id": "test_complaint[play:9e9d3c41-7dd1-4]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.0
+    },
+    {
+      "suite": "feasibility",
+      "id": "test_complaint[play:02309b80-7cef-4]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.0
+    },
+    {
+      "suite": "feasibility",
+      "id": "test_complaint[play:01266f52-e4d6-4]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.0
+    },
+    {
+      "suite": "feasibility",
+      "id": "test_every_queue_item_has_a_draft",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.0
+    },
+    {
+      "suite": "feasibility",
+      "id": "test_reply_drafts_stay_within_3_sentences",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.0
+    },
+    {
+      "suite": "feasibility",
+      "id": "test_the_weekly_run_completes_unattended",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.0
+    },
+    {
+      "suite": "feasibility",
+      "id": "test_themes_trace_to_review_ids_within_a_window",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.0
+    },
+    {
+      "suite": "feasibility",
+      "id": "test_pulse_is_at_most_250_words",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.0
+    },
+    {
+      "suite": "feasibility",
+      "id": "test_explainer_is_at_most_6_bullets",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.0
+    },
+    {
+      "suite": "grounding_compliance",
+      "id": "test_adversarial_typed[adv01]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.0
+    },
+    {
+      "suite": "grounding_compliance",
+      "id": "test_adversarial_typed[adv02]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.0
+    },
+    {
+      "suite": "grounding_compliance",
+      "id": "test_adversarial_typed[adv03]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.0
+    },
+    {
+      "suite": "grounding_compliance",
+      "id": "test_adversarial_typed[adv04]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 2.0
+    },
+    {
+      "suite": "grounding_compliance",
+      "id": "test_adversarial_typed[adv05]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.0
+    },
+    {
+      "suite": "grounding_compliance",
+      "id": "test_adversarial_typed[adv06]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 2.8
+    },
+    {
+      "suite": "grounding_compliance",
+      "id": "test_adversarial_typed[adv07]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.0
+    },
+    {
+      "suite": "grounding_compliance",
+      "id": "test_adversarial_typed[adv08]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 2.8
+    },
+    {
+      "suite": "grounding_compliance",
+      "id": "test_adversarial_typed[adv09]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 2.7
+    },
+    {
+      "suite": "grounding_compliance",
+      "id": "test_adversarial_typed[adv10]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.0
+    },
+    {
+      "suite": "grounding_compliance",
+      "id": "test_adversarial_typed[adv11]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.0
+    },
+    {
+      "suite": "grounding_compliance",
+      "id": "test_adversarial_typed[adv12]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.0
+    },
+    {
+      "suite": "grounding_compliance",
+      "id": "test_adversarial_typed[adv13]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.0
+    },
+    {
+      "suite": "grounding_compliance",
+      "id": "test_adversarial_typed[adv14]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 3.2
+    },
+    {
+      "suite": "grounding_compliance",
+      "id": "test_adversarial_typed[adv15]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.0
+    },
+    {
+      "suite": "grounding_compliance",
+      "id": "test_adversarial_typed[adv16]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 3.0
+    },
+    {
+      "suite": "grounding_compliance",
+      "id": "test_adversarial_typed[adv17]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.0
+    },
+    {
+      "suite": "grounding_compliance",
+      "id": "test_adversarial_typed[adv18]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 2.7
+    },
+    {
+      "suite": "grounding_compliance",
+      "id": "test_adversarial_typed[adv19]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.0
+    },
+    {
+      "suite": "grounding_compliance",
+      "id": "test_adversarial_typed[adv20]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.0
+    },
+    {
+      "suite": "grounding_compliance",
+      "id": "test_adversarial_typed[adv21]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.0
+    },
+    {
+      "suite": "grounding_compliance",
+      "id": "test_adversarial_typed[adv22]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 3.7
+    },
+    {
+      "suite": "grounding_compliance",
+      "id": "test_adversarial_typed[adv23]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 1.9
+    },
+    {
+      "suite": "grounding_compliance",
+      "id": "test_adversarial_typed[adv24]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 3.5
+    },
+    {
+      "suite": "grounding_compliance",
+      "id": "test_adversarial_typed[adv25]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 2.6
+    },
+    {
+      "suite": "grounding_compliance",
+      "id": "test_adversarial_typed[adv26]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 2.9
+    },
+    {
+      "suite": "grounding_compliance",
+      "id": "test_adversarial_typed[adv27]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 2.9
+    },
+    {
+      "suite": "grounding_compliance",
+      "id": "test_adversarial_typed[adv28]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 3.0
+    },
+    {
+      "suite": "grounding_compliance",
+      "id": "test_adversarial_typed[adv29]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 3.0
+    },
+    {
+      "suite": "grounding_compliance",
+      "id": "test_adversarial_typed[adv30]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 2.7
+    },
+    {
+      "suite": "grounding_compliance",
+      "id": "test_adversarial_typed[adv31]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.0
+    },
+    {
+      "suite": "grounding_compliance",
+      "id": "test_adversarial_typed[adv32]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 3.3
+    },
+    {
+      "suite": "grounding_compliance",
+      "id": "test_adversarial_spoken[a01]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.4
+    },
+    {
+      "suite": "grounding_compliance",
+      "id": "test_adversarial_spoken[a02]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.3
+    },
+    {
+      "suite": "grounding_compliance",
+      "id": "test_adversarial_spoken[a03]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 1.9
+    },
+    {
+      "suite": "grounding_compliance",
+      "id": "test_adversarial_spoken[a04]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.3
+    },
+    {
+      "suite": "grounding_compliance",
+      "id": "test_adversarial_spoken[a05]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 2.5
+    },
+    {
+      "suite": "grounding_compliance",
+      "id": "test_adversarial_spoken[a06]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.3
+    },
+    {
+      "suite": "grounding_compliance",
+      "id": "test_not_covered_typed[nc01]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 2.8
+    },
+    {
+      "suite": "grounding_compliance",
+      "id": "test_not_covered_typed[nc02]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 3.5
+    },
+    {
+      "suite": "grounding_compliance",
+      "id": "test_not_covered_typed[nc03]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 2.5
+    },
+    {
+      "suite": "grounding_compliance",
+      "id": "test_not_covered_typed[nc04]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 3.1
+    },
+    {
+      "suite": "grounding_compliance",
+      "id": "test_not_covered_typed[nc05]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 2.9
+    },
+    {
+      "suite": "grounding_compliance",
+      "id": "test_not_covered_typed[nc06]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 3.5
+    },
+    {
+      "suite": "grounding_compliance",
+      "id": "test_not_covered_typed[nc07]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 2.4
+    },
+    {
+      "suite": "grounding_compliance",
+      "id": "test_not_covered_typed[nc08]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 3.2
+    },
+    {
+      "suite": "grounding_compliance",
+      "id": "test_not_covered_typed[nc09]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 2.4
+    },
+    {
+      "suite": "grounding_compliance",
+      "id": "test_not_covered_typed[nc10]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.0
+    },
+    {
+      "suite": "grounding_compliance",
+      "id": "test_not_covered_typed[nc11]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 3.1
+    },
+    {
+      "suite": "grounding_compliance",
+      "id": "test_not_covered_spoken[n01]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 3.0
+    },
+    {
+      "suite": "grounding_compliance",
+      "id": "test_not_covered_spoken[n02]",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 3.0
+    },
+    {
+      "suite": "grounding_compliance",
+      "id": "test_adversarial_summary",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.0
+    },
+    {
+      "suite": "grounding_compliance",
+      "id": "test_weekly_loop_handles_adversarial_reviews",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.0
+    },
+    {
+      "suite": "grounding_compliance",
+      "id": "test_sampled_claims_resolve",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.0
+    },
+    {
+      "suite": "grounding_compliance",
+      "id": "test_no_pii_in_the_logs_or_tool_calls",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.1
+    },
+    {
+      "suite": "grounding_compliance",
+      "id": "test_no_pii_in_stored_text",
+      "outcome": "passed",
+      "message": "",
+      "seconds": 0.3
+    }
+  ],
+  "meta": {
+    "server_log": "evals/.work/server-20261119-111147.log",
+    "mcp_log": "evals/.work/mcp-20261119-111147.jsonl",
+    "started_at": "2026-11-19T11:12:04.601965",
+    "reseeded": false
+  }
+}

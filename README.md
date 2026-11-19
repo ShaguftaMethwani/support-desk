@@ -162,3 +162,41 @@ mentions exit load. The mutual fund fee issue users raise is Direct vs Regular p
 commission); most other charge complaints are about INDMoney's own brokerage and US-investing
 charges, which the corpus does not cover. See [docs/implementation.md](docs/implementation.md),
 Phase 3 status.
+
+## Evals
+
+Six suites run against the whole system through its HTTP API (architecture section 15):
+voice and intent, multi-question, loop connection, edit correctness, feasibility, and grounding
+and compliance. They use their own database, so your dev data is never touched.
+
+**One-time setup.** A local Postgres with pgvector, and an eval database:
+
+```bash
+brew install postgresql@17 pgvector
+/opt/homebrew/opt/postgresql@17/bin/pg_ctl -D /opt/homebrew/var/postgresql@17 start
+/opt/homebrew/opt/postgresql@17/bin/psql -d postgres \
+  -c "CREATE ROLE support LOGIN PASSWORD 'support';" \
+  -c "CREATE DATABASE support_desk_eval OWNER support;"
+/opt/homebrew/opt/postgresql@17/bin/psql -d support_desk_eval -c "CREATE EXTENSION vector;"
+```
+
+(Any Postgres with pgvector works: set `EVAL_DATABASE_URL`.) The first run builds the schema and
+the corpus from the local document cache, then loads the reviews.
+
+**Run** (from `backend/`; needs `GROQ_API_KEY`):
+
+```bash
+uv run python ../evals/run_all.py                  # all suites; cached Groq replies are reused
+uv run python ../evals/run_all.py --import-cache   # first copy cached replies from the dev database
+uv run python ../evals/run_all.py --fresh          # empty the Groq cache: every call is real
+uv run python ../evals/run_all.py -k multi         # only matching cases (pytest -k)
+```
+
+Each run empties every table except the corpus and the Groq cache, starts the API on port 8100
+against the eval database, and writes `evals/results/<date>[-label].md` and `.json`. Approved
+actions go to a fake MCP server (`evals/fake_mcp_server.py`) that records the calls, so evals
+never write to Google. The API's log and the recorded tool calls are kept in `evals/.work/`
+(not committed) and searched for PII by the grounding suite.
+
+**Groq quota.** A fresh run makes roughly 250 model calls and 24 Whisper calls; with the cache,
+a re-run makes almost none. The free tier allows 1,000 requests per day per model.

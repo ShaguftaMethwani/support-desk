@@ -15,6 +15,7 @@ from app.orchestrator.draft import (
     RETURNS_REFUSAL,
     Draft,
     clarification,
+    not_covered_reply,
     write_answer,
 )
 from app.orchestrator.refine import AGENTS_FOR, classify_feedback, feedback_by_rules
@@ -38,6 +39,9 @@ def pattern(label: str, reviews: int = 0, theme: str | None = None) -> PatternRe
 ANSWERED = FactsResult(status="answered", answer="Exit load is 0.0070% on day 1.",
                        citation=CITATION)  # fmt: skip
 NOT_COVERED_FACTS = FactsResult(status="not_covered", reason="low_similarity")
+SEARCHED = FactsResult(status="not_covered", searched=[
+    {"source": "hdfc_factsheet"}, {"source": "hdfc_mid_cap_kim"}, {"source": "hdfc_factsheet"},
+    {"source": "sebi_mf_faq"}, {"source": "hdfc_sai"}])  # fmt: skip
 
 
 # --- compliance -----------------------------------------------------------------------------
@@ -166,6 +170,8 @@ def _ctx(citation: SourceCitation | None) -> PolicyContext:
         (ADVICE_REFUSAL, SourceType.REFUSAL, True),
         (RETURNS_REFUSAL, SourceType.REFUSAL, True),
         (NOT_COVERED, SourceType.NOT_COVERED, False),
+        (not_covered_reply(SEARCHED), SourceType.NOT_COVERED, False),
+        (not_covered_reply(None), SourceType.NOT_COVERED, False),
         (COMPLAINT_NOT_COVERED, SourceType.NOT_COVERED, False),
         (clarification(None), SourceType.CLARIFICATION, False),
         (clarification("hdfc_liquid"), SourceType.CLARIFICATION, False),
@@ -208,3 +214,13 @@ async def test_feedback_and_rework_reach_the_drafting_prompt() -> None:
                        feedback="shorter", rework="- advice_guard: matched")  # fmt: skip
     prompt = llm.calls[0][1][-1]["content"]
     assert "shorter" in prompt and "advice_guard" in prompt
+
+
+def test_not_covered_names_what_was_searched() -> None:
+    reply = not_covered_reply(SEARCHED)
+    assert (
+        "I searched the HDFC Mutual Fund factsheet, the HDFC Mid Cap Fund Key Information "
+        "Memorandum and the SEBI mutual fund FAQ." in reply
+    )
+    assert "hdfc_sai" not in reply and "Statement of Additional" not in reply  # at most 3
+    assert "searched" in not_covered_reply(None)

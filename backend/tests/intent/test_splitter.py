@@ -145,3 +145,16 @@ def test_coverage_check() -> None:
     )
     assert not coverage_ok(original, ["exit load of HDFC Mid Cap Fund"])  # new words
     assert not coverage_ok(original, ["exit load"])  # covers too little
+
+
+def test_a_part_naming_another_fund_keeps_no_scheme() -> None:
+    from app.intent.rules import names_other_scheme
+    from app.intent.splitter import share_slots
+
+    parts = share_slots(["What is the lock-in of HDFC ELSS Tax Saver",
+                         "what is the NAV of HDFC Small Cap Fund?"])  # fmt: skip
+    assert [(p.scheme, p.scheme_inherited) for p in parts] == [
+        ("hdfc_elss_tax_saver", False), (None, False)]  # fmt: skip
+    assert not names_other_scheme("the HDFC Mutual Fund factsheet")
+    assert not names_other_scheme("exit load of HDFC Liquid Fund")
+    assert names_other_scheme("SBI Bluechip Fund exit load")

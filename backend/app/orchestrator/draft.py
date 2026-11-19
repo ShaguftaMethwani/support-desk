@@ -16,6 +16,7 @@ import uuid
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, replace
 from datetime import date
+from functools import lru_cache
 from typing import Protocol
 
 from pydantic import BaseModel
@@ -111,6 +112,61 @@ NOT_COVERED = (
     "I couldn't find this in the official documents I can cite, so I've passed your question "
     "to our team to answer."
 )
+# The problem statement's rule: "not covered" names what was searched.
+_DOC_LABELS = {
+    "kim": "Key Information Memorandum",
+    "sid": "Scheme Information Document",
+    "sai": "Statement of Additional Information",
+    "factsheet": "factsheet",
+    "fees": "expense ratio (TER) sheet",
+    "statement_guide": "statements guide",
+    "faq": "mutual fund FAQ",
+    "regulation": "investor charter",
+    "education": "investor education pages",
+    "platform_process": "help pages",
+}
+_PUBLISHERS = {"hdfc_mf": "HDFC Mutual Fund", "sebi": "SEBI", "amfi": "AMFI",
+               "indmoney_help": "INDMoney"}  # fmt: skip
+MAX_NAMED_SOURCES = 3
+
+
+@lru_cache
+def _source_labels() -> dict[str, str]:
+    from app.config import get_settings
+    from app.corpus.sources import load_sources
+
+    labels = {}
+    for src in load_sources(get_settings().source_domains):
+        doc = _DOC_LABELS.get(src.doc_type, src.doc_type.replace("_", " "))
+        schemes = [x for x in src.schemes if x in BY_SLUG]
+        owner = BY_SLUG[schemes[0]].name if len(schemes) == 1 else _PUBLISHERS[src.publisher]
+        labels[src.id] = f"{owner} {doc}"
+    return labels
+
+
+def searched_sources(facts: FactsResult | None) -> list[str]:
+    """Readable names of the documents the Facts Agent searched, closest first, at most 3."""
+    labels = _source_labels()
+    names: list[str] = []
+    for hit in facts.searched if facts else []:
+        name = labels.get(str(hit.get("source")))
+        if name and name not in names:
+            names.append(name)
+    return names[:MAX_NAMED_SOURCES]
+
+
+def not_covered_reply(facts: FactsResult | None) -> str:
+    names = searched_sources(facts)
+    if not names:
+        searched = "the HDFC Mutual Fund scheme documents and the SEBI and AMFI investor pages"
+    elif len(names) == 1:
+        searched = f"the {names[0]}"
+    else:
+        searched = ", ".join(f"the {n}" for n in names[:-1]) + f" and the {names[-1]}"
+    return (f"I couldn't find this in the official documents I can cite: I searched {searched}. "
+            "I've passed your question to our team to answer.")  # fmt: skip
+
+
 # The customer-facing text never names an internal team: the routing note does that.
 COMPLAINT_NOT_COVERED = (
     "Sorry about the trouble with this. I've passed it to our team, who will look into it and "

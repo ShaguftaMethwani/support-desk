@@ -6,6 +6,7 @@ Phase 1 installs the real redactor from the ingress guard with set_pii_redactor(
 """
 
 import logging
+import re
 from collections import Counter
 from collections.abc import Callable, MutableMapping
 from typing import Any
@@ -45,11 +46,16 @@ def counter_value(name: str) -> int:
     return _counters[name]
 
 
+_UUID = re.compile(r"[0-9a-f]{8}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{12}", re.I)
+
+
 def _redact_values(
     _logger: Any, _method: str, event_dict: MutableMapping[str, Any]
 ) -> MutableMapping[str, Any]:
     for key, value in event_dict.items():
-        if isinstance(value, str):
+        # An id (request id, item id) can hold a run of 12 digits that reads like an Aadhaar
+        # number. A value that is wholly a UUID can't be personal data, so it is left alone.
+        if isinstance(value, str) and not _UUID.fullmatch(value):
             event_dict[key] = _redactor(value)
     return event_dict
 

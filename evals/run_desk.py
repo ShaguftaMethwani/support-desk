@@ -66,7 +66,9 @@ async def main() -> int:
     blocked = []
     async with deps.sessions() as s:
         for outcome in outcomes:
-            runs = (await s.scalars(select(AgentRun).where(AgentRun.item_id == outcome.item_id))).all()
+            runs = (
+                await s.scalars(select(AgentRun).where(AgentRun.item_id == outcome.item_id))
+            ).all()
             draft = await latest_draft(s, outcome.item_id)
             expected = {"pattern", "compliance"} | (
                 set() if outcome.intent in ("advice", "returns", "unclear") else {"facts"}

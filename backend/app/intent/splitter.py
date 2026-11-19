@@ -20,7 +20,7 @@ from typing import Literal, Protocol
 
 from pydantic import BaseModel, Field
 
-from app.intent.rules import find_fee_type, find_scheme
+from app.intent.rules import find_fee_type, find_scheme, names_other_scheme
 from app.llm import LLMError, LLMResult
 
 MAX_PARTS = 5
@@ -255,7 +255,7 @@ def share_slots(texts: list[str]) -> list[Part]:
 
     parts = []
     for i, text in enumerate(texts):
-        scheme = schemes[i] or nearest(schemes, i)
+        scheme = schemes[i] or (None if names_other_scheme(text) else nearest(schemes, i))
         # A part with its own topic ("the ELSS lock-in") doesn't take another part's fee type.
         # Pronouns ("it") point at the scheme, not the fee.
         own_topic = bool(TOPICS.search(text))

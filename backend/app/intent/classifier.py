@@ -17,7 +17,15 @@ from typing import Literal, Protocol
 
 from pydantic import BaseModel, Field
 
-from app.intent.rules import PRONOUN, SCHEME_FACT, advice_rule, returns_rule, soft_advice
+from app.corpus.schemes import BY_SLUG
+from app.intent.rules import (
+    PRONOUN,
+    SCHEME_FACT,
+    advice_rule,
+    names_other_scheme,
+    returns_rule,
+    soft_advice,
+)
 from app.intent.splitter import Part
 from app.llm import LLMResult
 
@@ -59,9 +67,10 @@ that answers facts about 5 HDFC Mutual Fund schemes from official documents.
 
 Labels:
 - factual: asks for a fact about a scheme or mutual funds in general (exit load, expense ratio,
-  lock-in, minimum SIP, benchmark, riskometer, statements, how a process works).
-- fee_canonical: confused about a fee or charge that was deducted ("why was money cut when I
-  redeemed").
+  lock-in, minimum SIP, benchmark, riskometer, plan options such as growth and IDCW, what a
+  charge such as stamp duty is, KYC, statements, how a process works).
+- fee_canonical: confused about a fee or charge already deducted from their own money ("why
+  was money cut when I redeemed").
 - advice: asks what to do or which to choose (buy, sell, hold, which fund, is it good).
 - returns: asks about returns, performance or how much they will earn.
 - complaint: reports a problem with their account, a transaction or the service.
@@ -96,7 +105,7 @@ async def classify(
     scheme, source = part.scheme, None
     if scheme is not None:
         source = "shared" if part.scheme_inherited else "part"
-    elif session_scheme is not None and is_follow_up(text):
+    elif session_scheme is not None and is_follow_up(text) and not names_other_scheme(text):
         scheme, source = session_scheme, "session"
 
     def result(intent: str, confidence: float, method: str, rule: str | None) -> Classification:
@@ -111,9 +120,14 @@ async def classify(
     if advice_refused and soft_advice(text):
         return result("advice", 1.0, "sticky_refusal", "soft_advice")
 
+    # A follow-up ("what is its benchmark?") reads as vague on its own. The scheme it refers to
+    # was resolved by code from another part or the session, so the model is told which.
+    content = text
+    if scheme is not None and source in ("shared", "session") and scheme in BY_SLUG:
+        content = f"{text}\n(Here the customer means {BY_SLUG[scheme].name}, named earlier.)"
     out = await llm.complete(
         "intent",
-        [{"role": "system", "content": INTENT_PROMPT}, {"role": "user", "content": text}],
+        [{"role": "system", "content": INTENT_PROMPT}, {"role": "user", "content": content}],
         schema=_IntentOut,
         max_tokens=200,
     )

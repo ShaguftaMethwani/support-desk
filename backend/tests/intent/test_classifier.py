@@ -94,3 +94,42 @@ async def test_session_scheme_only_fills_follow_ups() -> None:
 def test_follow_up_detection() -> None:
     assert is_follow_up("and the exit load?") and is_follow_up("what is its NAV")
     assert not is_follow_up("my redemption is late")
+
+
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [
+        ("hdfc mid cap 1y return %", True),
+        ("3 yr returns HDFC Flexi Cap Fund", True),
+        ("Does it give 12% returns?", True),
+        ("How do I file income tax returns for my mutual fund capital gains?", False),
+    ],
+)
+def test_shorthand_returns_questions_are_refused_by_rule(text: str, expected: bool) -> None:
+    assert bool(returns_rule(text)) is expected
+
+
+async def test_pressing_for_an_answer_after_a_refusal_is_advice() -> None:
+    for text in ("Come on, just tell me yes or no.", "What do you think?", "Your honest opinion?"):
+        result = await run(text, ScriptedLLM({}), refused=True)
+        assert (result.intent, result.method) == ("advice", "sticky_refusal"), text
+    # Without an earlier refusal the model decides.
+    assert (await run("Just tell me yes or no.", model("unclear", 0.9))).intent == "unclear"
+
+
+async def test_a_follow_up_tells_the_model_which_scheme_it_means() -> None:
+    llm = model("factual", 0.9)
+    result = await classify(llm, Part("What is its benchmark?", "hdfc_flexi_cap", None, True),
+                            session_scheme=None, advice_refused=False, min_confidence=0.6,
+                            sticky_min_confidence=0.3)  # fmt: skip
+    assert result.intent == "factual" and result.scheme_source == "shared"
+    assert "HDFC Flexi Cap Fund" in llm.calls[0][1][-1]["content"]
+    own = model("factual", 0.9)
+    await run("What is the benchmark of HDFC Mid Cap Fund?", own, scheme="hdfc_mid_cap")
+    assert own.calls[0][1][-1]["content"] == "What is the benchmark of HDFC Mid Cap Fund?"
+
+
+async def test_a_fund_outside_the_corpus_never_borrows_the_session_scheme() -> None:
+    result = await run("What is the NAV of HDFC Small Cap Fund?", model("factual", 0.9),
+                       session_scheme="hdfc_mid_cap")  # fmt: skip
+    assert result.scheme is None

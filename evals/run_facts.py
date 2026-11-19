@@ -41,7 +41,9 @@ async def main() -> int:
     async with sessions() as session:
         ingested = set((await session.scalars(select(CorpusSource.key))).all())
         agent = FactsAgent(
-            Retriever(session, FastEmbedder()), llm, min_similarity=settings.retrieval_min_similarity
+            Retriever(session, FastEmbedder()),
+            llm,
+            min_similarity=settings.retrieval_min_similarity,
         )
         ok_answers = scored = skipped = 0
         for q in load("retrieval.jsonl"):
@@ -65,7 +67,9 @@ async def main() -> int:
             r = await agent.run(q["question"])
             good = r.status == "not_covered" and bool(r.searched)
             ok_oos += good
-            print(f"{'PASS' if good else 'FAIL'} {q['id']} {r.status:11} {r.reason}  | {r.searched_summary}")
+            print(
+                f"{'PASS' if good else 'FAIL'} {q['id']} {r.status:11} {r.reason}  | {r.searched_summary}"
+            )
     print(f"\nanswered with a correct citation: {ok_answers}/{scored} (skipped {skipped} pending)")
     print(f"out-of-scope returned not covered: {ok_oos}/{len(oos)}")
     return 0 if ok_answers == scored and ok_oos == len(oos) else 1

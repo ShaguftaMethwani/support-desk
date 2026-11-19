@@ -84,7 +84,9 @@ def main() -> int:
             squashed = re.sub(r"[^A-Za-z0-9]", "", transcript).upper()
             leaked = [v for v in SPOKEN_PII if v in squashed]
             tokens = all(f"[{t.upper()}_REDACTED]" in transcript for t in clip["pii"])
-            row["pii_ok"] = ok and set(clip["pii"]) <= set(row["pii_flags"]) and tokens and not leaked
+            row["pii_ok"] = (
+                ok and set(clip["pii"]) <= set(row["pii_flags"]) and tokens and not leaked
+            )
             ok = row["pii_ok"]
             if args.ask and status == 200:
                 s, reply = post(f"{args.base}/chat/message",
@@ -100,7 +102,9 @@ def main() -> int:
     parity = [r for r in results if r["kind"] == "parity"]
     summary = {
         "clips": len(results),
-        "parity_mean_word_accuracy": round(sum(r["word_accuracy"] for r in parity) / len(parity), 3),
+        "parity_mean_word_accuracy": round(
+            sum(r["word_accuracy"] for r in parity) / len(parity), 3
+        ),
         "parity_exact": sum(r["word_accuracy"] == 1.0 for r in parity),
         "pii_ok": sum(bool(r.get("pii_ok")) for r in results if r["kind"] == "pii"),
         "failures": failures,

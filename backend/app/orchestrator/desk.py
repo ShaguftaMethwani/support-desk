@@ -52,12 +52,12 @@ from app.observability import get_logger
 from app.orchestrator.draft import (
     ADVICE_REFUSAL,
     COMPLAINT_NOT_COVERED,
-    NOT_COVERED,
     RETURNS_REFUSAL,
     Completer,
     Draft,
     Retriever,
     clarification,
+    not_covered_reply,
     refusal_source,
     write_answer,
 )
@@ -321,7 +321,7 @@ async def build_draft(
         )
     facts = results.facts
     if facts is None or facts.status != "answered" or facts.answer is None:
-        body = COMPLAINT_NOT_COVERED if cls.intent == "complaint" else NOT_COVERED
+        body = COMPLAINT_NOT_COVERED if cls.intent == "complaint" else not_covered_reply(facts)
         return Draft(body, SourceType.NOT_COVERED, None, routing, model_written=False)
     body, fallback = await write_answer(
         deps.llm,

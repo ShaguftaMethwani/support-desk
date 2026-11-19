@@ -62,6 +62,9 @@ RETURNS_RULES: tuple[tuple[str, re.Pattern[str]], ...] = tuple(
         ("will_i_earn", r"\bhow\s+much\s+(?:will|can|would)\s+i\s+(?:get|earn|make)\b"),
         ("double_money", r"\b(?:double|triple)\s+(?:my\s+)?money\b"),
         ("highest_returns", r"\b(?:highest|best|good|guaranteed)\s+returns?\b"),
+        # Shorthand: "1y return", "3 yr returns", "return %", "12% returns".
+        ("short_returns", r"\b\d+\s*(?:y|yr|yrs|years?)\s+returns?\b|\breturns?\s*(?:%|percent)|"
+                          r"\b\d+(?:\.\d+)?\s*%\s+returns?\b"),
     )
 )  # fmt: skip
 
@@ -77,6 +80,11 @@ SOFT_ADVICE: tuple[re.Pattern[str], ...] = tuple(
         r"\b(?:put|park|keep)\s+(?:my\s+)?(?:money|savings|cash|\d)",
         r"\b(?:safe|safer|risky|riskier)\b",
         r"\bbetween\s+(?:the\s+)?(?:two|these|them)\b",
+        # Pressing for an answer after a refusal: "just tell me yes or no".
+        r"\byes\s+or\s+no\b",
+        r"\bjust\s+tell\s+me\b",
+        r"\bwhat\s+do\s+you\s+(?:think|suggest|recommend)\b",
+        r"\byour\s+(?:honest\s+)?(?:opinion|view|take)\b",
     )
 )
 
@@ -108,6 +116,23 @@ def find_fee_type(text: str) -> str | None:
 def find_scheme(text: str) -> str | None:
     found = find_schemes(text)
     return found[0] if found else None
+
+
+# A fund named by its full name ("HDFC Small Cap Fund", "SBI Bluechip Fund").
+_NAMED_FUND = re.compile(
+    r"\b(?:HDFC|SBI|ICICI(?:\s+Prudential)?|Axis|Nippon(?:\s+India)?|Kotak|Mirae(?:\s+Asset)?|"
+    r"Parag\s+Parikh|UTI|Aditya\s+Birla(?:\s+Sun\s+Life)?|Quant|DSP|Tata|Motilal\s+Oswal|"
+    r"Franklin(?:\s+India)?|Canara\s+Robeco|Edelweiss|Bandhan|Invesco(?:\s+India)?)"
+    # Not the fund house itself ("HDFC Mutual Fund").
+    r"(?!\s+Mutual\s+Funds?\b)(?:\s+[\w&'-]+){1,6}?\s+(?:Fund|FoF|ETF)\b",
+    _I,
+)
+
+
+def names_other_scheme(text: str) -> bool:
+    """Names a fund that is not one of the 5 schemes ("HDFC Small Cap Fund"). Such a part
+    keeps no scheme: it must not borrow another part's or the session's scheme."""
+    return find_scheme(text) is None and bool(_NAMED_FUND.search(text))
 
 
 # Facts that belong to one scheme. A question about one of these that names no scheme ("and

@@ -1,6 +1,7 @@
 """Generate the voice test clips with macOS text-to-speech (`say` and `afconvert`).
 
-    python evals/datasets/voice/make_clips.py
+    python evals/datasets/voice/make_clips.py           # only clips that don't exist yet
+    python evals/datasets/voice/make_clips.py --force   # all of them
 
 Each line of clips.jsonl gives the voice, the format and the words (`say`, or `text` when the
 spoken and expected words are the same). WAV clips are 16 kHz mono; m4a clips are AAC. The
@@ -13,6 +14,7 @@ made in the browser are a better test and can be added to clips.jsonl the same w
 
 import json
 import subprocess
+import sys
 import tempfile
 from pathlib import Path
 
@@ -21,11 +23,14 @@ CLIPS = HERE / "clips"
 
 
 def main() -> None:
+    force = "--force" in sys.argv
     CLIPS.mkdir(exist_ok=True)
     for line in (HERE / "clips.jsonl").read_text().splitlines():
         clip = json.loads(line)
         words = clip.get("say", clip["text"])
         out = CLIPS / f"{clip['id']}.{clip['format']}"
+        if out.exists() and not force:
+            continue
         with tempfile.TemporaryDirectory() as tmp:
             aiff = Path(tmp) / "clip.aiff"
             subprocess.run(["say", "-v", clip["voice"], "-r", "175", "-o", str(aiff), words],
