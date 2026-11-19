@@ -7,7 +7,6 @@ from functools import lru_cache
 
 from sqlalchemy import select
 
-from app.config import get_settings
 from app.db.models import WeeklyRun
 from app.observability import get_logger
 from app.weekly.pipeline import WeeklyDeps, execute_run
@@ -62,21 +61,18 @@ class WeeklyRunner:
 
 
 def default_deps() -> WeeklyDeps:
-    from app.corpus.embed import FastEmbedder
-    from app.corpus.retrieve import Retriever
-    from app.db.session import get_sessionmaker
-    from app.llm import LLMClient
-    from app.llm.cache import PostgresCache
+    """The desk's own dependencies, shared: one embedding model and one Groq client per
+    process. A second model copy cost about 80 MB on Render's 512 MB, and one client keeps a
+    single rate limiter for the one API key."""
+    from app.orchestrator.deps import get_desk_deps
 
-    settings = get_settings()
-    sessions = get_sessionmaker()
-    embedder = FastEmbedder()
+    desk = get_desk_deps()
     return WeeklyDeps(
-        sessions=sessions,
-        llm=LLMClient(settings, PostgresCache(sessions, write_behind=True)),
-        embedder=embedder,
-        retriever_for=lambda session: Retriever(session, embedder),
-        settings=settings,
+        sessions=desk.sessions,
+        llm=desk.llm,
+        embedder=desk.embedder,
+        retriever_for=desk.retriever_for,
+        settings=desk.settings,
     )
 
 

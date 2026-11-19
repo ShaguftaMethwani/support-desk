@@ -7,10 +7,8 @@ import { McpError } from "../../../src/errors/mcp-error.js";
 
 let mockDocsClient = createMockDocsClient({ endIndex: 100 });
 
-vi.mock("googleapis", () => ({
-  google: {
-    docs: vi.fn().mockImplementation(() => mockDocsClient),
-  },
+vi.mock("@googleapis/docs", () => ({
+  docs: vi.fn().mockImplementation(() => mockDocsClient),
 }));
 
 function createMockAuthService(): GoogleAuthService {

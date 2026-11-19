@@ -11,7 +11,7 @@ import { createInterface } from "readline";
 import { exec } from "child_process";
 import { getConfig } from "../config/config.js";
 import { GoogleAuthService } from "../services/google-auth.service.js";
-import { google } from "googleapis";
+import { OAuth2Client } from "google-auth-library";
 
 /** Open a URL in the system default browser (macOS / Linux / Windows). */
 function openBrowser(url: string): void {
@@ -81,7 +81,7 @@ async function main(): Promise<void> {
     process.exit(0);
   }
 
-  const oauth2Client = new google.auth.OAuth2(
+  const oauth2Client = new OAuth2Client(
     config.google.clientId,
     config.google.clientSecret,
     config.google.redirectUri

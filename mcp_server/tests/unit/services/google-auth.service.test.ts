@@ -10,21 +10,17 @@ vi.mock("fs/promises", () => ({
   constants: { F_OK: 0 },
 }));
 
-// Mock googleapis
-vi.mock("googleapis", () => ({
-  google: {
-    auth: {
-      OAuth2: vi.fn().mockImplementation(() => ({
-        on: vi.fn(),
-        setCredentials: vi.fn(),
-        generateAuthUrl: vi.fn().mockReturnValue("https://accounts.google.com/o/oauth2/auth?mock"),
-        getToken: vi.fn().mockResolvedValue({ tokens: { access_token: "mock_access", refresh_token: "mock_refresh" } }),
-        refreshAccessToken: vi.fn().mockResolvedValue({
-          credentials: { access_token: "new_access_token", expiry_date: Date.now() + 3600000 },
-        }),
-      })),
-    },
-  },
+// Mock the OAuth client
+vi.mock("google-auth-library", () => ({
+  OAuth2Client: vi.fn().mockImplementation(() => ({
+    on: vi.fn(),
+    setCredentials: vi.fn(),
+    generateAuthUrl: vi.fn().mockReturnValue("https://accounts.google.com/o/oauth2/auth?mock"),
+    getToken: vi.fn().mockResolvedValue({ tokens: { access_token: "mock_access", refresh_token: "mock_refresh" } }),
+    refreshAccessToken: vi.fn().mockResolvedValue({
+      credentials: { access_token: "new_access_token", expiry_date: Date.now() + 3600000 },
+    }),
+  })),
 }));
 
 const mockConfig = {

@@ -8,15 +8,13 @@ const { mockDraftsCreate, mockMessagesSend } = vi.hoisted(() => ({
   mockMessagesSend: vi.fn(),
 }));
 
-vi.mock("googleapis", () => ({
-  google: {
-    gmail: vi.fn().mockReturnValue({
-      users: {
-        drafts: { create: mockDraftsCreate },
-        messages: { send: mockMessagesSend },
-      },
-    }),
-  },
+vi.mock("@googleapis/gmail", () => ({
+  gmail: vi.fn().mockReturnValue({
+    users: {
+      drafts: { create: mockDraftsCreate },
+      messages: { send: mockMessagesSend },
+    },
+  }),
 }));
 
 function createMockAuthService(): GoogleAuthService {

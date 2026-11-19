@@ -28,6 +28,12 @@ only executes the call it is given.
 5. **Logs to stderr.** The logger wrote to stdout (pino's default), which is the MCP protocol
    channel over stdio: a log line there was read by the client as a malformed message. It now
    writes to stderr, as the entry point's comments already said it did.
+6. **Only the Docs and Gmail clients.** The server imported `googleapis`, which loads every
+   Google API: 147 MB and half a second on a laptop, and over 30 s at Render's 0.1 CPU, where
+   the backend's tool call timed out. It now uses `@googleapis/docs`, `@googleapis/gmail` and
+   `google-auth-library` (99 MB for the whole server). Their versions are the ones on
+   `googleapis-common` 7, the same `google-auth-library` 9 as before. `googleapis` is a dev
+   dependency, used only by `npm run smoke` (which also lists Drive files).
 
 Tests were updated to match: the send tests are removed; new tests cover drafts without a
 recipient, the send API never being called, revision ids, deduplication and the pinned write,

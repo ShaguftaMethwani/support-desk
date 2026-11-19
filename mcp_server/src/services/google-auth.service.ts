@@ -1,4 +1,3 @@
-import { google } from "googleapis";
 import { OAuth2Client, Credentials } from "google-auth-library";
 import { readFile, writeFile, access, constants } from "fs/promises";
 import * as readline from "readline";
@@ -25,7 +24,7 @@ export class GoogleAuthService {
     this.tokenPath = config.google.tokenPath;
     this.scopes = config.google.scopes;
 
-    this.oauth2Client = new google.auth.OAuth2(
+    this.oauth2Client = new OAuth2Client(
       config.google.clientId,
       config.google.clientSecret,
       config.google.redirectUri

@@ -1,4 +1,4 @@
-import { google, gmail_v1 } from "googleapis";
+import { gmail as gmailApi, gmail_v1 } from "@googleapis/gmail";
 import { OAuth2Client } from "google-auth-library";
 import { GoogleAuthService } from "./google-auth.service.js";
 import { GmailDraftInput, GmailDraftResult, MimeMessage } from "../types/gmail.types.js";
@@ -29,7 +29,7 @@ export class GmailService {
    */
   async createDraft(input: GmailDraftInput): Promise<GmailDraftResult> {
     const auth = await this.authService.getAuthenticatedClient();
-    const gmail = google.gmail({ version: "v1", auth });
+    const gmail = gmailApi({ version: "v1", auth });
 
     const mimeMessage = this.buildMimeMessage({
       to: input.to ?? [],

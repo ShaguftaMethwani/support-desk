@@ -1,4 +1,4 @@
-import { google } from "googleapis";
+import { docs as docsApi } from "@googleapis/docs";
 import { GoogleAuthService } from "./google-auth.service.js";
 import { GoogleDocsAppendInput, GoogleDocsAppendResult } from "../types/google-docs.types.js";
 import { logger } from "../logging/logger.js";
@@ -36,7 +36,7 @@ export class GoogleDocsService {
       );
     }
     const auth = await this.authService.getAuthenticatedClient();
-    const docs = google.docs({ version: "v1", auth });
+    const docs = docsApi({ version: "v1", auth });
 
     logger.info(
       { tool_name: "google_docs_append", operation: "documents.get", document_id: input.document_id },
