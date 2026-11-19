@@ -69,8 +69,9 @@ Labels:
 - factual: asks for a fact about a scheme or mutual funds in general (exit load, expense ratio,
   lock-in, minimum SIP, benchmark, riskometer, plan options such as growth and IDCW, what a
   charge such as stamp duty is, KYC, statements, how a process works).
-- fee_canonical: confused about a fee or charge already deducted from their own money ("why
-  was money cut when I redeemed").
+- fee_canonical: confused about a fee or charge on their own investment: money deducted, or
+  paying more than they expected ("why was money cut when I redeemed", "why is my regular
+  plan charging more than the direct plan").
 - advice: asks what to do or which to choose (buy, sell, hold, which fund, is it good).
 - returns: asks about returns, performance or how much they will earn.
 - complaint: reports a problem with their account, a transaction or the service.

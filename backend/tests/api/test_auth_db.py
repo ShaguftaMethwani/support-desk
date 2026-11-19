@@ -9,15 +9,20 @@ from typing import Any
 
 import pytest
 from fastapi.testclient import TestClient
+from pydantic import SecretStr
 from sqlalchemy import delete, text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import NullPool
 
 from app.api.auth import COOKIE, LoginLimiter, get_login_limiter
 from app.config import Settings, get_settings
+from app.corpus.embed import HashEmbedder
 from app.db.models import AppUser
 from app.db.session import get_session
+from app.llm import LLMClient
 from app.main import create_app
+from app.orchestrator.deps import get_desk_deps
+from app.orchestrator.desk import DeskDeps
 from app.security import hash_password
 
 pytestmark = pytest.mark.db
@@ -79,6 +84,19 @@ def make_client(**overrides: Any) -> TestClient:
     app.dependency_overrides[get_settings] = lambda: settings
     app.dependency_overrides[get_session] = session_override
     app.dependency_overrides[get_login_limiter] = lambda: limiter
+    # The desk's own dependencies, never the production ones: those read GROQ_API_KEY from the
+    # environment (absent in CI) and load the embedding model. No test here calls a model.
+    deps = DeskDeps(
+        sessions=async_sessionmaker(
+            create_async_engine(Settings().database_url, poolclass=NullPool),
+            expire_on_commit=False,
+        ),
+        llm=LLMClient(settings.model_copy(update={"groq_api_key": SecretStr("unused")})),
+        embedder=HashEmbedder(),
+        retriever_for=lambda _session: None,  # type: ignore[arg-type,return-value]
+        settings=settings,
+    )
+    app.dependency_overrides[get_desk_deps] = lambda: deps
     # https: the cookie is Secure outside local, and httpx only sends it over https.
     return TestClient(app, base_url="https://testserver")
 

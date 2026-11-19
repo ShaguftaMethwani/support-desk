@@ -138,8 +138,13 @@ class Settings(BaseSettings):
     canonical_fee_similarity: float = 0.68
     # a factual question or complaint (no scheme, no fee type named) needs this,
     canonical_similarity: float = 0.82
-    # or this when it names the explainer's fee type.
-    canonical_fee_type_similarity: float = 0.55
+    # or this when it names the explainer's fee type. A fee_canonical question naming the fee type
+    # ("why is my regular plan charging more") matches with no floor. A factual one needs 0.60:
+    # look-alikes such as "Can I switch from the regular plan to the direct plan?" (0.56) and
+    # "Is there stamp duty on the direct plan?" (0.59) score above some real fee-confusion
+    # paraphrases (0.545), so for those the intent label decides, not the similarity
+    # (measured on two expense ratio explainers, November 2026).
+    canonical_fee_type_similarity: float = 0.60
     # Weekly loop (architecture section 8).
     reviews_csv_path: Path = REPO_ROOT / "data" / "reviews_sample.csv"
     weekly_window_weeks: int = 12  # the review sample covers the last 12 weeks

@@ -178,6 +178,17 @@ def write_report(
             f"| {r} | {v['failed']} | {v['checked']} | {v['rate']:.1%} |" for r, v in rr.items()
         ]
 
+    branches = {k.removeprefix("branch_"): v for k, v in metrics.items() if k.startswith("branch_")}
+    if branches:
+        lines += ["", "## Branch coverage (problem statement 8.5)", "",
+                  "| Complaint | Intent | Answer | Pattern | Agents fired | PII caught |",
+                  "|---|---|---|---|---|---|"]  # fmt: skip
+        for branch, b in branches.items():
+            agents = ", ".join(f"{a} ({st})" for a, st in b["agents_fired"].items())
+            pii = ", ".join(b["pii_flags"]) or "none"
+            lines.append(f"| {branch} | {b['intent']} | {b['answer']} | {b['pattern']} | {agents} "
+                         f"| {pii} |")  # fmt: skip
+
     failed = [c for c in cases if c["outcome"] == "failed"]
     lines += ["", f"## Failing cases ({len(failed)})", ""]
     for c in failed:

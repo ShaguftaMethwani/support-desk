@@ -151,3 +151,51 @@ def test_explainer_is_at_most_6_bullets(weekly_run: dict[str, Any]) -> None:
         pytest.skip("no fee confusion found, so no explainer")
     assert 1 <= len(explainer["bullets"]) <= 6, f"{len(explainer['bullets'])} bullets"
     assert explainer["source_urls"] and explainer["last_checked"]
+
+
+# Problem statement 8.5, branch coverage: one complaint the corpus answers cleanly, one it
+# can't answer, one matching a recurring theme, and one containing PII. Which agents fired on
+# each is recorded, and the PII must be caught before anything reaches a draft.
+BRANCHES = [
+    ("answered", "I was charged an exit load when I redeemed HDFC Liquid Fund units after 2 "
+                 "days. What is the exit load of HDFC Liquid Fund?"),
+    ("not_covered", "The app crashed while I was adding money and now my balance shows zero."),
+    ("recurring", "The app keeps crashing and the verification fails every time I try to log "
+                  "in, I cannot even see my investments."),
+    ("pii", "My PAN is ABCPE1234F and my SIP in HDFC Mid Cap Fund failed twice this month."),
+]  # fmt: skip
+
+
+@pytest.mark.parametrize(("branch", "text"), BRANCHES, ids=[b for b, _ in BRANCHES])
+def test_branch_coverage(env: EvalEnv, record: Any, branch: str, text: str) -> None:
+    answer = env.chat(text)["answers"][0]
+    item = env.item(answer["id"])
+    fired = {r["agent"]: r["status"] for r in item["agent_runs"]}
+    pattern = next((r["output"] for r in item["agent_runs"] if r["agent"] == "pattern"), {}) or {}
+    compliance = next((r["output"] for r in item["agent_runs"] if r["agent"] == "compliance"),
+                      {}) or {}  # fmt: skip
+    review = (item["versions"][-1].get("review") or []) if item["versions"] else []
+    record(f"branch_{branch}", {
+        "intent": item["intent"], "answer": kind(item), "agents_fired": fired,
+        "pattern": pattern.get("label"), "pii_flags": [f["detail"] for f in
+                                                       compliance.get("incoming_flags", [])
+                                                       if f["type"] == "pii"],
+        "reviewer": {r["rule"]: r["passed"] for r in review},
+    })  # fmt: skip
+    problems = []
+    if not {"pattern", "compliance"} <= set(fired):
+        problems.append(f"agents fired: {fired}")
+    if branch == "answered" and kind(item) != "answered":
+        problems.append(f"expected a cited answer, got {kind(item)}")
+    if branch == "not_covered" and kind(item) != "not_covered":
+        problems.append(f"expected not covered, got {kind(item)}")
+    if branch == "recurring" and pattern.get("label") not in ("recurring", "rising"):
+        problems.append(f"pattern {pattern.get('label')}, expected recurring or rising")
+    if branch == "pii":
+        if "ABCPE1234F" in item["question"]:
+            problems.append("the PAN reached the queue")
+        if not any(f["type"] == "pii" for f in compliance.get("incoming_flags", [])):
+            problems.append("Compliance did not flag the PII")
+        if not all(r["passed"] for r in review if r["rule"] == "pii_guard"):
+            problems.append("the reviewer found PII in the draft")
+    assert not problems, "; ".join(problems)

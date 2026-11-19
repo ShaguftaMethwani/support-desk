@@ -36,6 +36,9 @@ log = get_logger(__name__)
 Messages = Sequence[Mapping[str, str]]
 
 MAX_RETRY_AFTER_SECONDS = 60.0
+# Groq's JSON mode answers 400 with this code when the model's reply isn't valid JSON.
+JSON_VALIDATE_FAILED = "json_validate_failed"
+MAX_JSON_RETRY_TOKENS = 4096
 
 
 class LLMError(Exception):
@@ -293,6 +296,7 @@ class LLMClient:
         if effort is not None:
             extra["reasoning_effort"] = effort
         attempt = 0
+        json_retried = False
         while True:
             await limiter.acquire(reserved)
             started = self._clock()
@@ -319,6 +323,23 @@ class LLMClient:
                 delay = _backoff_seconds(attempt)
                 reason = "transient_error"
                 error = exc
+            except openai.BadRequestError as exc:
+                limiter.settle(reserved, 0)
+                if getattr(exc, "code", None) != JSON_VALIDATE_FAILED:
+                    log.error("llm_unavailable", task=task, model=model, reason="http_400")
+                    raise LLMUnavailableError("Groq refused the call (400)") from exc
+                # JSON mode: the model's reply wasn't valid JSON, usually because a reasoning
+                # model ran out of tokens mid-answer. One more try with twice the budget.
+                if json_retried:
+                    log.warning(
+                        "llm_output_invalid", task=task, model=model, reason=JSON_VALIDATE_FAILED
+                    )
+                    raise LLMOutputError(f"Groq could not produce JSON for task {task!r}") from exc
+                json_retried = True
+                max_tokens = min(max_tokens * 2, MAX_JSON_RETRY_TOKENS)
+                reserved = estimate_tokens(messages) + max_tokens
+                log.warning("llm_json_retry", task=task, model=model, max_tokens=max_tokens)
+                continue
             except openai.APIError as exc:
                 # Anything else won't get better by retrying: a revoked key (401), a retired
                 # model name (404), a rejected request (400). Fail closed at once, so the item

@@ -317,3 +317,36 @@ async def test_other_groq_errors_fail_closed_without_retries(
     with pytest.raises(LLMUnavailableError):
         await make_client(settings, fake, clock).complete("facts", MSGS)
     assert len(fake.calls) == 1 and clock.sleeps == []
+
+
+def json_validate_failed() -> Any:
+    import httpx
+    import openai
+
+    response = httpx.Response(400, request=httpx.Request("POST", "https://api.groq.test/x"))
+    return openai.BadRequestError(
+        "Failed to generate JSON",
+        response=response,
+        # The SDK hands over the response's "error" object as the body.
+        body={"code": "json_validate_failed", "type": "invalid_request_error"},
+    )
+
+
+async def test_invalid_json_from_groq_is_retried_once_with_more_tokens(
+    settings: Settings, fake_openai: FakeFactory, clock: FakeClock
+) -> None:
+    fake = fake_openai([json_validate_failed(), completion('{"ok": true}')])
+    result = await make_client(settings, fake, clock).complete(
+        "weekly_pulse", MSGS, json_mode=True, max_tokens=900
+    )
+    assert result.text == '{"ok": true}'
+    assert [c["max_tokens"] for c in fake.calls] == [900, 1800]
+
+
+async def test_invalid_json_twice_is_an_output_error(
+    settings: Settings, fake_openai: FakeFactory, clock: FakeClock
+) -> None:
+    fake = fake_openai([json_validate_failed(), json_validate_failed()])
+    with pytest.raises(LLMOutputError):
+        await make_client(settings, fake, clock).complete("weekly_pulse", MSGS, json_mode=True)
+    assert len(fake.calls) == 2
