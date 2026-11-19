@@ -17,6 +17,7 @@ from typing import Annotated, Any, Literal
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 from sqlalchemy import select
+from sqlalchemy.dialects.postgresql import distinct_on
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.auth import current_user
@@ -137,7 +138,7 @@ async def chat_message(body: ChatRequest, user: User, session: Session, deps: De
     for item_id in intake.item_ids:
         item = await session.get(QueueItem, item_id, populate_existing=True)
         assert item is not None
-        answers.append(item_view(item, await latest_draft(session, item.id), "text"))
+        answers.append(item_view(item, await latest_draft(session, item.id), body.channel))
     dropped = None
     if intake.dropped:
         dropped = {"message": "Please ask the remaining questions separately.",
@@ -170,15 +171,36 @@ async def list_queue(
     if status:
         stmt = stmt.where(QueueItem.status == status)
     rows = (await session.execute(stmt)).all()
+    ids = [item.id for item, _ in rows]
+    # Two queries for the whole page, not one per item: the latest draft of each item, and the
+    # latest Compliance and Pattern outputs (the flags and the pattern badge).
+    drafts = {
+        d.item_id: d
+        for d in await session.scalars(
+            select(DraftVersion)
+            .where(DraftVersion.item_id.in_(ids))
+            .ext(distinct_on(DraftVersion.item_id))
+            .order_by(DraftVersion.item_id, DraftVersion.version.desc())
+        )
+    }
+    latest: dict[tuple[uuid.UUID, str], Any] = {}
+    runs = await session.execute(
+        select(AgentRun.item_id, AgentRun.agent, AgentRun.output_json)
+        .where(AgentRun.item_id.in_(ids), AgentRun.agent.in_(("compliance", "pattern")))
+        .order_by(AgentRun.started_at)
+    )
+    for item_id, agent, output in runs:
+        latest[(item_id, agent)] = output
     out = []
     for item, channel in rows:
-        view = item_view(item, await latest_draft(session, item.id), channel)
-        flags = await session.scalar(
-            select(AgentRun.output_json).where(AgentRun.item_id == item.id,
-                                               AgentRun.agent == "compliance")
-            .order_by(AgentRun.started_at.desc()).limit(1)
-        )  # fmt: skip
-        view["compliance"] = flags
+        view = item_view(item, drafts.get(item.id), channel)
+        view["compliance"] = latest.get((item.id, "compliance"))
+        pattern = latest.get((item.id, "pattern"))
+        view["pattern"] = (
+            {"label": pattern.get("label"), "theme": pattern.get("matched_theme_label")}
+            if pattern
+            else None
+        )
         out.append(view)
     return {"items": out}
 

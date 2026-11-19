@@ -778,7 +778,10 @@ Every column holding user-originated free text ends in `_redacted`, so the write
 | `POST /messages/{id}/combined-reply` | Creates one pending email-draft action holding all approved answers for a multi-question message |
 | `POST /weekly/run` | Manual trigger for the weekly loop |
 | `GET /weekly/{run_id}` | Themes, counts, windows, quotes, pulse, explainer, and the run status the cron job polls |
-| `GET /sources` | Corpus sources with last-checked dates, and claims linked to them |
+| `GET /weekly/runs` | Recent weekly runs, newest first |
+| `GET /sources` | Corpus sources with last-checked dates, and the drafts that cite them |
+| `GET /reviews?ids=` | Redacted reviews by id, so a theme's count can list its reviews |
+| `POST /auth/login`, `POST /auth/logout`, `GET /auth/me` | Username and password login, held in a signed HttpOnly session cookie |
 | `GET /explainers/canonical` | Active canonical explainers with sources and reuse count (`?include_archived=true` adds replaced ones) |
 | `GET /actions/pending` | Approval screen data |
 | `POST /actions/{id}/approve` | Approves and executes **one** action. Requires `payload_hash`. |

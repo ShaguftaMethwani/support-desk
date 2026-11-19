@@ -459,6 +459,44 @@ The Google Docs and Gmail MCP server built earlier is reused as-is. No new MCP s
 - [ ] **Canonical explainers view.** Active explainers with bullets, sources, approval date and reuse count. Pending `promote_canonical` actions show here with a link to the approval screen.
 - [ ] **Login** in front of every view, including chat, as described in Phase 10. The chat is an agent-assist console, not a customer-facing page.
 
+### Status (November 2026)
+- **Stack** (`frontend/`): Vite 7, React 19, TypeScript, Tailwind CSS 4, React Router 7, TanStack Query 5, Vitest. `npm audit` reports no vulnerabilities.
+- **Typed client:** `npm run gen:api` exports the OpenAPI schema without a server (`backend/scripts/export_openapi.py`) and generates `src/api/schema.d.ts` with `openapi-typescript`. Request bodies come from it. Most endpoints return plain dicts, so the schema has no response models; response types are written by hand in `src/api/types.ts`, mirroring the view functions in `backend/app/api/`.
+- **Login, built now rather than in Phase 10,** because every view sits behind it:
+  - `POST /auth/login`, `POST /auth/logout` and `GET /auth/me`.
+  - Passwords are hashed with scrypt from the standard library. Sessions are an HMAC-signed, HttpOnly cookie that lasts 12 hours, with `SESSION_SECRET` required outside local and test.
+  - State-changing requests made with the cookie must send `X-Requested-With: desk`, as a CSRF guard.
+  - Users are created with `scripts/create_user.py`.
+  - The frontend always asks for a login, because `/auth/me` ignores the local stand-in user. Curl and the tests still work locally without one.
+  - Phase 10 still has to: set the cookie's SameSite for Vercel and Render, add login rate limiting, and create the graders' login.
+- **New endpoints for the views:**
+  - `GET /sources`: each corpus source with the drafts that cite it, matched on the citation's `source_key`.
+  - `GET /reviews?ids=`: redacted review text, so a theme count can list its reviews.
+  - `GET /weekly/runs`.
+  - The weekly endpoints now accept a signed-in user as well as the trigger token. The local stand-in user is not enough.
+  - `GET /queue` now returns each item's pattern label, and loads drafts and agent outputs in 2 queries instead of 2 per item. That took it from 13 s to under 4 s against Neon from India.
+- **Views:**
+  - **Chat:** example questions, `MediaRecorder` with a 30-second cap, a transcript box with one-click scheme suggestions, one answer block per part, and a play button.
+  - **Queue:** a table grouped by message, plus a drawer with the timing bars, all three agents' outputs, versions with reviewer rules, and the refinement log. It has approve, edit, refine and reject controls, plus a combined reply once every part is decided.
+  - **Weekly pulse:** runs, stages, theme cards whose counts list their reviews, quotes, the pulse, fee counts and the explainer.
+  - **Approvals:** every payload field is shown, and approve sends the card's `payload_hash`.
+  - **Explainers:** reuse counts, and pending promotions with a link to approvals.
+  - **Sources.**
+- **Tests:**
+  - 8 Vitest unit tests: answer status, message grouping, timing bars, suggestion offsets, and the spoken script.
+  - 4 unit tests for passwords and tokens.
+  - 8 database tests for login, the cookie and CSRF rules, weekly access, sources and reviews.
+- **Exit check (19 November 2026),** in headless Chrome against the local API and the Neon data:
+  - Login worked, and a wrong password was refused.
+  - A typed question was answered with its citation chip.
+  - Every view loaded with no console errors: the queue drawer, a theme's review list, all 3 pending weekly actions with full payloads, and sources.
+  - At 390 px wide, no page scrolls sideways. The queue table scrolls inside its card.
+  - **Not done in this check:**
+    - Approving actions, which writes to the real Google Doc and Gmail.
+    - Recording with a real microphone, because headless Chrome has none.
+    - Reading a reply aloud.
+    - Doing these by hand is part of the Phase 10 hosted check.
+
 ### Exit check
 - Every flow in the demo script can be done in the browser without the API docs.
 - Layouts work at laptop width. Phone width is nice to have.

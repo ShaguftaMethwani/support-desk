@@ -58,9 +58,29 @@ uv run python ../evals/run_facts.py      # Facts Agent test set (uses Groq, cach
 
 HDFC documents must be downloaded by hand first. See [backend/corpus/manual/README.md](backend/corpus/manual/README.md).
 
+## Frontend
+
+The agent console: chat, queue, approvals, weekly pulse, canonical explainers and sources.
+Every view is behind a login, so create a user first (from `backend/`):
+
+```bash
+uv run python -m scripts.create_user <username>   # asks for a password (10+ characters)
+```
+
+Then, with the API running on port 8000:
+
+```bash
+cd frontend
+npm ci
+npm run dev          # http://localhost:5173 (proxies /api to localhost:8000)
+npm test             # unit tests
+npm run gen:api      # regenerate src/api/schema.d.ts after changing the API
+```
+
 ## Response loop
 
-With the API running locally (`APP_ENV=local`; login arrives in Phase 10):
+With the API running locally (`APP_ENV=local`, where curl requests without a login act as a
+local developer user; the browser always asks for a login):
 
 ```bash
 curl -X POST localhost:8000/chat/message -H 'content-type: application/json' \

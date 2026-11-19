@@ -3,8 +3,11 @@
 POST /weekly/run      start a run in the background and return its id at once
 GET  /weekly/{run_id} the run's status, stages, themes, quotes, pulse, explainer and actions
 
-Both need the trigger token (the cron job sends it), as a Bearer token or X-Trigger-Token.
-Signed-in user access for the frontend comes with the app's login in a later phase.
+GET  /weekly/runs     recent runs, newest first
+
+The cron job sends the trigger token, as a Bearer token or X-Trigger-Token. A signed-in user
+(session cookie) may call them too, from the weekly pulse view. The local developer user that
+stands in for a login on other endpoints is not enough here.
 """
 
 import hmac
@@ -12,14 +15,15 @@ import uuid
 from datetime import date
 from typing import Annotated, Any, Literal
 
-from fastapi import APIRouter, BackgroundTasks, Depends, Header, HTTPException, status
+from fastapi import APIRouter, BackgroundTasks, Depends, Header, HTTPException, Query, status
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.auth import session_user
 from app.config import Settings, get_settings
-from app.db.models import FeeExplainer, PendingAction, Pulse, Theme, WeeklyRun
+from app.db.models import AppUser, FeeExplainer, PendingAction, Pulse, Theme, WeeklyRun
 from app.db.session import get_session
 from app.weekly.pipeline import STAGES, create_run, support_themes
 from app.weekly.runner import WeeklyRunner, get_weekly_runner
@@ -29,9 +33,12 @@ router = APIRouter(prefix="/weekly", tags=["weekly"])
 
 def require_trigger_token(
     settings: Annotated[Settings, Depends(get_settings)],
+    user: Annotated[AppUser | None, Depends(session_user)],
     authorization: Annotated[str | None, Header()] = None,
     x_trigger_token: Annotated[str | None, Header()] = None,
 ) -> None:
+    if user is not None:
+        return
     expected = settings.weekly_trigger_token
     if expected is None:
         raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "weekly trigger not configured")
@@ -76,6 +83,29 @@ async def trigger_run(
         )
     background.add_task(runner.run, run.id)
     return {"run_id": str(run.id), "status": run.status}
+
+
+@router.get("/runs", dependencies=[Depends(require_trigger_token)])
+async def list_runs(
+    session: Session, limit: Annotated[int, Query(ge=1, le=100)] = 20
+) -> dict[str, Any]:
+    runs = (
+        await session.scalars(select(WeeklyRun).order_by(WeeklyRun.started_at.desc()).limit(limit))
+    ).all()
+    return {
+        "runs": [
+            {
+                "run_id": str(r.id),
+                "status": r.status,
+                "error": r.error,
+                "triggered_by": r.triggered_by,
+                "window": {"start": r.window_start.isoformat(), "end": r.window_end.isoformat()},
+                "started_at": r.started_at.isoformat() if r.started_at else None,
+                "finished_at": r.finished_at.isoformat() if r.finished_at else None,
+            }
+            for r in runs
+        ]
+    }
 
 
 @router.get("/{run_id}", dependencies=[Depends(require_trigger_token)])

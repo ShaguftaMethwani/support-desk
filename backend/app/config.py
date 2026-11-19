@@ -100,6 +100,14 @@ class Settings(BaseSettings):
 
     weekly_trigger_token: SecretStr | None = None
 
+    # Login (signed session cookie). Required outside local and test; locally a random
+    # secret is made at startup, so sessions end when the API restarts.
+    session_secret: SecretStr | None = None
+    session_max_age_hours: int = 12
+    # "none" when the frontend is on another site than the API (Vercel and Render). The
+    # cookie is then sent cross-site, so it must be Secure (set outside local and test).
+    session_cookie_samesite: str = "lax"
+
     # Response loop (architecture section 7).
     intent_min_confidence: float = 0.6  # below this the intent becomes "unclear"
     # After an advice refusal in a session, a model "advice" label counts from this confidence.

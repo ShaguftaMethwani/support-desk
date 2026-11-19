@@ -1,6 +1,6 @@
 # Demo Script: Connecting the Two Loops
 
-This demo shows the core of the project: the response loop and the weekly loop feeding each other (architecture section 9). It uses the local API from `backend/`. The frontend views arrive in Phase 8; until then every step is a `curl` call. The results quoted below are from the Phase 6 exit check on 18 November 2026.
+This demo shows the core of the project: the response loop and the weekly loop feeding each other (architecture section 9). Each step is given as a `curl` call against the local API from `backend/`. Every step can also be done in the frontend (`npm run dev` in `frontend/`): approvals on the Approvals page, questions in Chat, reuse counts on Explainers, and runs on Weekly pulse. The results quoted below are from the Phase 6 exit check on 18 November 2026.
 
 ## Before you start
 
