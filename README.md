@@ -321,7 +321,7 @@ retryable; everything else works.
 **Tests and checks** (from `backend/`; CI runs the same):
 
 ```bash
-uv run pytest -m "not llm"        # 601 tests, no Groq calls; database tests need DATABASE_URL
+uv run pytest -m "not llm"        # 605 tests, no Groq calls; database tests need DATABASE_URL
 uv run ruff check . && uv run mypy
 cd ../frontend && npm test && npm run build
 ```
@@ -439,7 +439,7 @@ backend/
     llm/          Groq client: tiers, cache, rate limits, retries, fallback model
   corpus/         sources.yaml, manual downloads, ingest
   scripts/        review collection, user creation, production cleanup
-  tests/          601 tests (plus 5 that call Groq, run on demand)
+  tests/          605 tests (plus 5 that call Groq, run on demand)
 frontend/         React app (six views), vercel.json
 mcp_server/       vendored Google Docs and Gmail MCP server (send tool removed)
 evals/            the six suites, datasets, voice clips, results

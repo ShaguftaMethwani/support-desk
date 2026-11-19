@@ -738,6 +738,7 @@ Everything that can be done in the repository is done and tested locally. Hostin
   - **The embedding model was loaded twice.** The weekly runner built its own dependencies, so the first approval or question after a run loaded a second copy: +80 MB that stays. The runner now reuses the desk's model and Groq client (one rate limiter for the one key).
   - **The MCP server imported all of `googleapis`**: 147 MB, and over 30 s to load at 0.1 CPU, so the email draft timed out locally (441 MB with Node still loading). It now loads only `@googleapis/docs`, `@googleapis/gmail` and `google-auth-library`: 88 MB at peak, and a call reaches Google in 12–14 s.
   - After both fixes: weekly run, then all three approvals in a row, peaked at 392 MB with no kill.
+- **Runs never left "awaiting approval".** `completed` existed as a status, but no code set it, so a run whose actions were all approved or rejected still showed as waiting on the Weekly page. The gate now completes the run when its last open action is executed or rejected, in the same transaction. A failed action keeps the run open, because it can be retried. The run row is locked first: without that, two last approvals at once each counted the other's action as open and left the run waiting (a test holds both approvals at the count; it fails 5 of 5 without the lock). Migration 0004 completes the runs already decided: two on production.
 - **Still to do:**
   - giving the graders the login with the submission;
   - recording the video;

@@ -165,7 +165,7 @@ export interface Window {
 
 export interface WeeklyRunSummary {
   run_id: string;
-  status: "pending" | "in_progress" | "awaiting_approval" | "failed" | string;
+  status: "pending" | "in_progress" | "awaiting_approval" | "completed" | "failed" | string;
   error: string | null;
   triggered_by: string;
   window: Window;

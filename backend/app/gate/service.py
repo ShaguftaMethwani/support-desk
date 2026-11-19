@@ -6,6 +6,8 @@ approve_action, in one database transaction:
   3. insert the approval row (unique per action: one approval, one action)
   4. execute it: an MCP tool call, or for promote_canonical a database write
   5. store the result id, or mark the action failed with the error
+  6. if the action belongs to a weekly run and none of the run's actions is still open, mark
+     the run completed
 A failed action keeps its approval and can be retried; doc appends carry a dedupe key, so a
 retry never writes the same entry twice.
 
@@ -18,7 +20,7 @@ import uuid
 from collections.abc import Callable
 from datetime import UTC, datetime
 
-from sqlalchemy import select, update
+from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.connector.canonical import bullet_chunk_ids
@@ -31,11 +33,16 @@ from app.db.models import (
     Message,
     PendingAction,
     QueueItem,
+    WeeklyRun,
 )
 from app.gate.actions import new_pending_action, payload_hash
 from app.mcp.allowlist import ToolNotAllowedError
 from app.mcp.client import McpClient, McpToolError
 from app.mcp.execute import NotApprovedError, execute
+
+# An action that still needs a decision or a retry. A run's own actions are its last step, so
+# once none of them is open (each executed or rejected) the run is completed.
+OPEN_ACTION_STATUSES = ("pending", "approved", "failed")
 
 
 class GateError(Exception):
@@ -95,6 +102,35 @@ async def promote_canonical(
     return str(canonical.id)
 
 
+async def _complete_run_if_resolved(s: AsyncSession, action: PendingAction) -> None:
+    """Mark the action's weekly run completed once none of its actions is open. The run row is
+    locked first, so two approvals of the same run at once can't each see the other's action
+    as still open and both leave the run waiting."""
+    if action.origin != "weekly_run":
+        return
+    run = await s.scalar(
+        select(WeeklyRun).where(WeeklyRun.id == action.origin_id).with_for_update()
+    )
+    if run is None or run.status != "awaiting_approval":
+        return
+    await s.flush()  # this action's new status counts
+    if not await _open_actions(s, run.id):
+        run.status = "completed"
+
+
+async def _open_actions(s: AsyncSession, run_id: uuid.UUID) -> int:
+    count = await s.scalar(
+        select(func.count())
+        .select_from(PendingAction)
+        .where(
+            PendingAction.origin == "weekly_run",
+            PendingAction.origin_id == run_id,
+            PendingAction.status.in_(OPEN_ACTION_STATUSES),
+        )
+    )
+    return count or 0
+
+
 async def _run(
     s: AsyncSession,
     action: PendingAction,
@@ -144,6 +180,7 @@ async def approve_action(
     await _run(
         s, action, approval, client=client, embedder=embedder, approver_id=approver_id, now=now
     )
+    await _complete_run_if_resolved(s, action)
     await s.commit()
     return action
 
@@ -172,6 +209,7 @@ async def retry_action(
         approver_id=approval.approver_id,
         now=now,
     )
+    await _complete_run_if_resolved(s, action)
     await s.commit()
     return action
 
@@ -181,6 +219,7 @@ async def reject_action(s: AsyncSession, action_id: uuid.UUID) -> PendingAction:
     if action.status != "pending":
         raise GateError(409, f"action is already {action.status}")
     action.status = "rejected"
+    await _complete_run_if_resolved(s, action)
     await s.commit()
     return action
 

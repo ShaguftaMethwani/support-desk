@@ -2,6 +2,7 @@
 is reachable."""
 
 import asyncio
+import contextlib
 import uuid
 from collections.abc import AsyncIterator
 from datetime import date
@@ -29,6 +30,7 @@ from app.db.models import (
     QueueItem,
     WeeklyRun,
 )
+from app.gate import service as gate_service
 from app.gate.actions import new_pending_action
 from app.gate.service import GateError, approve_action, combined_reply, reject_action, retry_action
 from app.mcp.client import McpToolError
@@ -309,6 +311,89 @@ async def test_reject_marks_only_that_action(world: World) -> None:
     assert (await world.reload(actions["doc_append"].id)).status == "pending"
     with pytest.raises(GateError):
         await world.approve(actions["email_draft"], FakeMcp())
+
+
+async def run_status(world: World, action: PendingAction) -> str:
+    async with world.sessions() as s:
+        run = await s.get(WeeklyRun, action.origin_id)
+        assert run is not None
+        return run.status
+
+
+async def test_the_run_completes_when_its_last_action_is_decided(world: World) -> None:
+    actions = await world.weekly_actions()
+    await world.approve(actions["doc_append"], FakeMcp())
+    assert await run_status(world, actions["doc_append"]) == "awaiting_approval"
+    async with world.sessions() as s:
+        await reject_action(s, actions["email_draft"].id)
+    assert await run_status(world, actions["doc_append"]) == "awaiting_approval"
+    await world.approve(actions["promote_canonical"], FakeMcp())  # the last open one
+    assert await run_status(world, actions["doc_append"]) == "completed"
+
+
+async def test_rejecting_the_last_action_completes_the_run(world: World) -> None:
+    actions = await world.weekly_actions()
+    async with world.sessions() as s:
+        for action in actions.values():
+            await reject_action(s, action.id)
+    assert await run_status(world, actions["doc_append"]) == "completed"
+
+
+async def test_a_failed_action_keeps_the_run_open_until_retried(world: World) -> None:
+    actions = await world.weekly_actions()
+    async with world.sessions() as s:
+        await reject_action(s, actions["promote_canonical"].id)
+    await world.approve(actions["doc_append"], FakeMcp())
+    client = FakeMcp(fail=[McpToolError("TOKEN_EXPIRED", "refresh failed")])
+    failed = await world.approve(actions["email_draft"], client)
+    assert failed.status == "failed"
+    assert await run_status(world, actions["doc_append"]) == "awaiting_approval"
+    async with world.sessions() as s:
+        await retry_action(s, actions["email_draft"].id, client=client, embedder=HashEmbedder())
+    assert await run_status(world, actions["doc_append"]) == "completed"
+
+
+class Meeting:
+    """Two coroutines wait here for each other, each for at most 0.5 s."""
+
+    def __init__(self) -> None:
+        self.seen = 0
+        self.both = asyncio.Event()
+
+    async def meet(self) -> None:
+        self.seen += 1
+        if self.seen == 2:
+            self.both.set()
+        with contextlib.suppress(TimeoutError):
+            await asyncio.wait_for(self.both.wait(), 0.5)
+
+
+async def test_concurrent_last_decisions_still_complete_the_run(
+    world: World, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The two last actions are approved at once. Each approval waits (up to 0.5 s) for the
+    other before counting the open actions, and again before committing. Without the run lock
+    both would count before either commits, each see the other's action as open, and leave the
+    run waiting. With it, the second can't count until the first has committed."""
+    actions = await world.weekly_actions()
+    async with world.sessions() as s:
+        await reject_action(s, actions["promote_canonical"].id)
+    count = gate_service._open_actions
+    arrived, counted = Meeting(), Meeting()
+
+    async def count_in_step(s: AsyncSession, run_id: uuid.UUID) -> int:
+        await arrived.meet()
+        n = await count(s, run_id)
+        await counted.meet()
+        return n
+
+    monkeypatch.setattr(gate_service, "_open_actions", count_in_step)
+    client = FakeMcp()
+    await asyncio.gather(
+        world.approve(actions["doc_append"], client), world.approve(actions["email_draft"], client)
+    )
+    assert counted.seen == 2
+    assert await run_status(world, actions["doc_append"]) == "completed"
 
 
 async def test_combined_reply_needs_every_part_decided(world: World) -> None:
