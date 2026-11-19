@@ -3,7 +3,7 @@ import { useMemo, useState, type FormEvent } from "react";
 import { Link, useSearchParams } from "react-router";
 import { api } from "../api/client";
 import type { QueueListItem } from "../api/types";
-import { Badge, Empty, ErrorNote, ItemStatusBadge, Loading, PageHeader, PatternBadge } from "../components/ui";
+import { Badge, Empty, ErrorNote, ItemStatusBadge, Loading, ModelTagBadge, PageHeader, PatternBadge } from "../components/ui";
 import { fmtDateTime, groupByMessage, humanize, type MessageGroup } from "../lib/desk";
 import { QueueDrawer } from "./QueueDrawer";
 
@@ -171,11 +171,7 @@ function ItemRow({ item, multi, onOpen }: { item: QueueListItem; multi: boolean;
           {multi && <span className="mr-1 text-slate-400">{item.part_index + 1}.</span>}
           <span className="line-clamp-2">{item.question}</span>
         </span>
-        {item.draft?.model_tag && (
-          <Badge tone="violet" title="Drafted by the fallback model">
-            {item.draft.model_tag}
-          </Badge>
-        )}
+        <ModelTagBadge tag={item.draft?.model_tag ?? null} />
       </td>
       <td className="px-3 py-2 whitespace-nowrap text-slate-700">
         {humanize(item.intent)}

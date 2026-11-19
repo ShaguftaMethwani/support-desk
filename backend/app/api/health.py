@@ -2,6 +2,9 @@
 
 Returns 503 only when the database is down, since nothing works without it.
 A Groq problem gives status "degraded": the app still serves stored data.
+
+GET /health/live: the process is up. No database or Groq call, so the host's frequent health
+checks (Render) cost nothing and never touch the Groq quota.
 """
 
 import asyncio
@@ -67,6 +70,11 @@ def get_health_checks() -> HealthChecks:
 
 
 router = APIRouter()
+
+
+@router.get("/health/live")
+async def live() -> dict[str, str]:
+    return {"status": "ok"}
 
 
 @router.get("/health", response_model=HealthResponse)

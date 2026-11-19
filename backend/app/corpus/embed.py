@@ -16,6 +16,10 @@ EMBED_DIM = 384
 # bge models expect this instruction on queries (not on documents).
 QUERY_INSTRUCTION = "Represent this sentence for searching relevant passages: "
 CACHE_DIR = Path(__file__).resolve().parents[2] / ".cache" / "fastembed"
+# Small batches keep memory flat: a batch pads to its longest text, and attention memory grows
+# with batch x length^2. Embedding 320 of the longest reviews peaked 444 MB above the loaded
+# model at batch size 32 (over Render's 512 MB on its own), and 52 MB at 4, which was no slower.
+BATCH_SIZE = 4
 
 
 class Embedder(Protocol):
@@ -39,7 +43,7 @@ class FastEmbedder:
         return TextEmbedding(EMBED_MODEL, cache_dir=str(self._cache_dir))
 
     def embed_documents(self, texts: list[str]) -> list[list[float]]:
-        return [vector.tolist() for vector in self._model.embed(texts, batch_size=32)]
+        return [vector.tolist() for vector in self._model.embed(texts, batch_size=BATCH_SIZE)]
 
     def embed_query(self, text: str) -> list[float]:
         vector = next(iter(self._model.embed([QUERY_INSTRUCTION + text])))

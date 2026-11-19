@@ -4,12 +4,19 @@ One entry point, LLMClient.complete(task, messages). It picks the model from the
 serves repeats from the cache, waits on the rate limiter, retries rate-limit and transient
 errors, validates JSON output against a Pydantic schema, and records token counts.
 It logs task, model, tokens and timing only, never prompt or response text.
+
+Fallback model: when Groq reports that a model's daily quota is spent (a 429 whose retry-after
+is longer than a minute, or that names a per-day limit), that model is skipped until the quota
+resets and the call goes to the other tier's model. Callers that need to know (the desk tags
+the draft) wrap their work in track_fallback().
 """
 
 import asyncio
 import json
 import time
-from collections.abc import Mapping, Sequence
+from collections.abc import Iterator, Mapping, Sequence
+from contextlib import contextmanager
+from contextvars import ContextVar
 from dataclasses import dataclass, replace
 from typing import Any, cast
 
@@ -47,6 +54,36 @@ class LLMOutputError(LLMError):
     """The model did not return valid JSON for the schema, even after one repair."""
 
 
+class LLMQuotaError(LLMUnavailableError):
+    """A model's daily quota is spent. Retrying the same model won't help today."""
+
+    def __init__(self, message: str, model: str, retry_after_s: float | None) -> None:
+        super().__init__(message)
+        self.model = model
+        self.retry_after_s = retry_after_s
+
+
+# Models used as a fallback during the current piece of work (see track_fallback). A list is
+# shared by reference, so agents running in child tasks record into their parent's list.
+_FALLBACK_USED: ContextVar[list[str] | None] = ContextVar("llm_fallback_used", default=None)
+
+
+def fallback_models_used() -> list[str]:
+    """The fallback models used so far inside the current track_fallback() block."""
+    return list(_FALLBACK_USED.get() or [])
+
+
+@contextmanager
+def track_fallback() -> Iterator[list[str]]:
+    """Collects the fallback models used by every LLM call made inside the block."""
+    used: list[str] = []
+    token = _FALLBACK_USED.set(used)
+    try:
+        yield used
+    finally:
+        _FALLBACK_USED.reset(token)
+
+
 @dataclass(frozen=True)
 class LLMResult:
     text: str
@@ -57,6 +94,7 @@ class LLMResult:
     cached: bool
     latency_ms: int
     parsed: BaseModel | None = None
+    fallback: bool = False  # answered by the other tier's model: the first one's quota ran out
 
     @property
     def total_tokens(self) -> int:
@@ -77,6 +115,31 @@ def _retry_after_seconds(exc: openai.APIStatusError) -> float | None:
         return min(max(float(value), 0.0), MAX_RETRY_AFTER_SECONDS)
     except ValueError:
         return None
+
+
+# A per-minute limit resets within a minute. A longer wait, or a message naming a daily limit,
+# means the day's quota is spent.
+QUOTA_HINTS = ("per day", "(rpd)", "(tpd)", "requests per day", "tokens per day")
+DEFAULT_QUOTA_RESET_SECONDS = 3600.0
+
+
+def _quota_reset_seconds(exc: openai.RateLimitError) -> float | None:
+    """Seconds until the quota resets when this 429 is a spent daily quota, else None."""
+    raw = exc.response.headers.get("retry-after")
+    try:
+        wait = float(raw) if raw is not None else None
+    except ValueError:
+        wait = None
+    message = str(exc).lower()
+    if wait is not None and wait > MAX_RETRY_AFTER_SECONDS:
+        return wait
+    if any(hint in message for hint in QUOTA_HINTS):
+        return wait if wait is not None and wait > 0 else DEFAULT_QUOTA_RESET_SECONDS
+    return None
+
+
+def other_tier(tier: Tier) -> Tier:
+    return Tier.LARGE if tier is Tier.SMALL else Tier.SMALL
 
 
 def _backoff_seconds(attempt: int) -> float:
@@ -115,6 +178,11 @@ class LLMClient:
             tier: RateLimiter(*settings.limits_for_tier(tier), clock=clock, sleep=sleep)
             for tier in Tier
         }
+        self._exhausted_until: dict[str, float] = {}  # model -> clock time its quota resets
+
+    def _exhausted(self, model: str) -> bool:
+        until = self._exhausted_until.get(model)
+        return until is not None and self._clock() < until
 
     async def complete(
         self,
@@ -163,6 +231,40 @@ class LLMClient:
         max_tokens: int,
     ) -> LLMResult:
         tier = tier_for(task)
+        primary = self._settings.model_for_tier(tier)
+        backup_tier = other_tier(tier)
+        backup = self._settings.model_for_tier(backup_tier)
+        can_fall_back = self._settings.llm_fallback_enabled and backup != primary
+        args = (task, messages, json_mode, temperature, max_tokens)
+        if not (can_fall_back and self._exhausted(primary)):
+            try:
+                return await self._call(*args, tier=tier, fallback=False)
+            except LLMQuotaError as exc:
+                if not can_fall_back:
+                    raise
+                wait = exc.retry_after_s or DEFAULT_QUOTA_RESET_SECONDS
+                self._exhausted_until[primary] = self._clock() + wait
+                log.warning("llm_quota_exhausted", task=task, model=primary, fallback=backup,
+                            reset_s=int(wait))  # fmt: skip
+        if self._exhausted(backup):
+            raise LLMUnavailableError(f"daily quota spent for {primary} and {backup}")
+        result = await self._call(*args, tier=backup_tier, fallback=True)
+        used = _FALLBACK_USED.get()
+        if used is not None:
+            used.append(result.model)
+        return result
+
+    async def _call(
+        self,
+        task: str,
+        messages: Messages,
+        json_mode: bool,
+        temperature: float,
+        max_tokens: int,
+        *,
+        tier: Tier,
+        fallback: bool,
+    ) -> LLMResult:
         model = self._settings.model_for_tier(tier)
         effort = self._settings.reasoning_effort
         max_tokens = max(max_tokens, self._settings.min_completion_tokens)
@@ -178,10 +280,10 @@ class LLMClient:
         if self._cache is not None:
             hit = await self._cache.get(key)
             if hit is not None:
-                log.info("llm_call", task=task, model=model, cached=True, tokens=0)
-                return LLMResult(
-                    hit.text, task, model, hit.prompt_tokens, hit.completion_tokens, True, 0
-                )
+                log.info("llm_call", task=task, model=model, cached=True, tokens=0,
+                         fallback=fallback)  # fmt: skip
+                return LLMResult(hit.text, task, model, hit.prompt_tokens, hit.completion_tokens,
+                                 True, 0, fallback=fallback)  # fmt: skip
 
         limiter = self._limiters[tier]
         reserved = estimate_tokens(messages) + max_tokens
@@ -205,6 +307,10 @@ class LLMClient:
                 break
             except openai.RateLimitError as exc:
                 limiter.settle(reserved, 0)
+                reset = _quota_reset_seconds(exc)
+                if reset is not None:
+                    # No retries: the quota won't come back within this request.
+                    raise LLMQuotaError(f"daily quota spent for {model}", model, reset) from exc
                 delay = _retry_after_seconds(exc) or _backoff_seconds(attempt)
                 reason = "rate_limited"
                 error: Exception = exc
@@ -213,6 +319,15 @@ class LLMClient:
                 delay = _backoff_seconds(attempt)
                 reason = "transient_error"
                 error = exc
+            except openai.APIError as exc:
+                # Anything else won't get better by retrying: a revoked key (401), a retired
+                # model name (404), a rejected request (400). Fail closed at once, so the item
+                # shows "temporarily unavailable" instead of the request crashing.
+                limiter.settle(reserved, 0)
+                status = getattr(exc, "status_code", None)
+                log.error("llm_unavailable", task=task, model=model,
+                          reason=f"http_{status}" if status else type(exc).__name__)  # fmt: skip
+                raise LLMUnavailableError(f"Groq refused the call ({status})") from exc
             if attempt >= self._settings.llm_max_retries:
                 log.error("llm_unavailable", task=task, model=model, reason=reason)
                 raise LLMUnavailableError(f"{reason} after {attempt} retries") from error
@@ -258,5 +373,7 @@ class LLMClient:
             completion_tokens=completion_tokens,
             latency_ms=latency_ms,
             retries=attempt,
+            fallback=fallback,
         )
-        return LLMResult(text, task, model, prompt_tokens, completion_tokens, False, latency_ms)
+        return LLMResult(text, task, model, prompt_tokens, completion_tokens, False, latency_ms,
+                         fallback=fallback)  # fmt: skip

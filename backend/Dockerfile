@@ -28,9 +28,14 @@ COPY --from=node:22-bookworm-slim /usr/local/bin/node /usr/local/bin/node
 
 COPY --from=ghcr.io/astral-sh/uv:0.13.5 /uv /usr/local/bin/uv
 
+# The API runs as an unprivileged user. Created first so files can be copied in with their
+# owner set: a `chown -R` afterwards would copy every file into a second layer.
+RUN useradd --create-home --uid 10001 desk
+
 WORKDIR /app/backend
 COPY backend/pyproject.toml backend/uv.lock ./
-RUN uv sync --frozen --no-dev --no-install-project
+# --no-cache: the download cache would otherwise stay in the image (about 550 MB).
+RUN uv sync --frozen --no-dev --no-install-project --no-cache
 
 COPY backend/ ./
 COPY data/ /app/data/
@@ -40,6 +45,14 @@ COPY --from=mcp /mcp/dist /app/mcp_server/dist
 
 ENV PATH="/app/backend/.venv/bin:$PATH" \
     MCP_SERVER_DIR=/app/mcp_server
+
+# The embedding model (bge-small, about 130 MB) is downloaded now, into the image. Render's
+# disk is wiped on every restart, so a runtime download would happen on each cold start.
+# The code and dependencies stay owned by root (read-only for the API); only the model cache
+# belongs to the API's user.
+RUN mkdir -p .cache && chown desk .cache
+USER desk
+RUN python -c "from app.corpus.embed import FastEmbedder; FastEmbedder().embed_query('warm up')"
 EXPOSE 8000
 # Render sets $PORT. Migrations run on every start and are a no-op when up to date.
 CMD ["sh", "-c", "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]

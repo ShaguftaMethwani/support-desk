@@ -602,6 +602,65 @@ A full fresh run is roughly 80–100 questions at about 4 calls each. Spread the
 - [ ] **Security pass.** No secrets in the repo, the trigger token is required, the CORS allow-list is set, and the audio route has no body logging. The MCP server's Google credentials come only from environment variables, and no token files are committed from the earlier project.
 - [ ] **MCP check on the hosted app.** Approve one action on Render and confirm the doc entry and Gmail draft appear. This confirms the server starts in the container and the credentials work there.
 
+### Status (November 2026)
+Everything that can be done in the repository is done and tested locally. Hosting needs the Render, Vercel, Neon and GitHub accounts; the steps are in the README's Deployment section.
+
+- **Hosting layout:**
+  - The API runs on Render (`render.yaml`): free plan, Ohio (next to Neon's us-east-2), Docker, and deploys only after CI passes.
+  - The frontend runs on Vercel (`frontend/vercel.json`). Vercel proxies `/api/*` to Render, so the browser only talks to one origin. The session cookie is first-party (SameSite=Lax) and CORS allows no origins.
+  - Vercel's proxy waits up to 120 s, which covers Render's cold start of about a minute.
+  - The loading screen says the server is waking up after 5 s.
+- **Image** (`backend/Dockerfile`), built and run locally with Colima:
+  - The embedding model is downloaded into the image, so it isn't re-downloaded on each cold start.
+  - The API runs as an unprivileged user.
+  - uv's download cache is left out. The dependency layer went from 1.16 GB to 628 MB.
+  - A CI job builds the image and checks that the MCP server and the model are in it.
+- **Run under Render's free limits** (`--memory 512m --cpus 0.1`, production settings, against the eval database):
+  - Ready in 56 s.
+  - 115 MB idle; 318 MB after the first question, which loads the embedding model and took 32 s.
+  - **The first weekly run was killed for lack of memory at 512 MB.** Embedding reviews in batches of 32 padded each batch to its longest review: measured on 320 long reviews, the peak was 444 MB above the loaded model. Batches of 4 add 52 MB and are no slower, so documents are now embedded 4 at a time.
+  - **The API froze during the weekly run.** A trivial request took 46 s, and one timed out at 60 s, because the guard pass over the CSV, review embedding, de-duplication, clustering and query embedding ran on the event loop. They now run in threads.
+  - After both fixes, a full weekly run completes in 6.5 minutes with a peak of 348 MB. The API answers in 0.55 s on average during the run (worst 3.2 s).
+  - **The run that was killed resumed** when the container started again (`weekly_resume_on_startup`), as it would after a Render restart.
+  - **The MCP server starts inside the image** and lists exactly `gmail_create_draft` and `google_docs_append`.
+- **Unattended weekly runs:**
+  - A run failed because its pulse was 274 words, twice. It had 5 surfaced support-queue clusters, and code never shortens the cluster lines.
+  - Code now shortens the pulse further, in this order:
+    1. It cuts the quotes to 50 characters. They stay verbatim openings of the reviews.
+    2. Only if that's not enough, it names the 3 largest clusters and adds "and N more, listed in the doc entry". The doc entry still lists every cluster with its ids.
+  - The first version hid clusters before shortening quotes. In the eval re-run, that left the loop-connection cluster unnamed when 4 clusters needed 252 words, so the order was swapped.
+  - The pulse check accepts the shortened form only if the 3 largest clusters are named and the count is right.
+  - Eval re-run after Phase 10: 165 of 167 passed, with the same 2 known limits. The pulse was 235 words.
+- **Weekly cron** (`.github/workflows/weekly.yml`, checked with actionlint):
+  - Runs Mondays at 03:30 UTC, and can be started by hand.
+  - Wakes the API with retries and checks the database through `/health`.
+  - Starts the run; a 409 means a run is already active, and the job follows that one.
+  - Polls every minute until the run finishes, which also keeps the free service awake. The job fails if the run fails.
+- **Failure behaviour:**
+  - Groq unreachable: the item shows "unavailable", as before.
+  - **A bad API key or a retired model name crashed the request with a 500** and left the item in "new". Any other Groq error now fails closed at once, with no retries, and the item shows "unavailable". The log names the reason (`http_401`, `http_404`).
+- **Fallback model** (built now; the risk table had listed it as cuttable):
+  - When Groq reports a spent daily quota (a 429 with a retry-after over a minute, or "per day" in the message), the client skips that model until the quota resets and sends the call to the other tier's model.
+  - Drafts made this way carry `model_tag = "fallback_model"`. The frontend shows it as "fallback model", separate from the existing "Facts wording" tag.
+  - Per-minute limits are still retried on the same model.
+- **Reviewer:** a new `promised_action` rule fails replies that promise an action the desk never takes ("we will email you the factsheet", "I'll send…"). It applies to first-person promises only: documents state rules like "will be cancelled after three failed debits". Over 89 existing drafts it flagged only the one real case.
+- **Auth hardening:**
+  - Sign-in is refused for 15 minutes after 5 failures for a username (in memory, per username, because behind the proxy every request comes from Vercel).
+  - The API docs (`/docs`, `/redoc`, `/openapi.json`) are only served locally.
+  - The production branch is cleaned with `scripts/prepare_production.py`, which won't run unless it's told the host name it will empty.
+- **Security pass:**
+  - gitleaks over the full history: no leaks.
+  - No token or credential files are tracked.
+  - The trigger token is required.
+  - CORS allows no origins.
+  - The frontend sends a strict Content Security Policy and other security headers. `vite preview` serves the same headers, and all six views were driven in headless Chrome against the production-mode container with no CSP violations.
+- **Still to do on the hosted app (needs your accounts):**
+  - Deploy.
+  - Run the weekly workflow once from the Actions tab.
+  - Approve one doc entry and one email draft and check them in Google.
+  - Watch Render's memory graph during a run.
+  - Create the graders' login.
+
 ### Exit check
 - The hosted app runs the full demo script.
 - A scheduled cron run completes without manual help, and its pending actions appear on the approval screen.

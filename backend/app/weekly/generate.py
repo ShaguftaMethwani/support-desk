@@ -511,7 +511,23 @@ def fee_lines(inp: PulseInput) -> list[str]:
     return lines
 
 
-def compose_pulse(inp: PulseInput, out: _PulseOut) -> str:
+# When the pulse is over the word cap with many surfaced clusters, it names the largest few and
+# counts the rest; the doc entry still lists every cluster with its queue item ids.
+SUPPORT_LINES_SHOWN = 3
+
+
+def _more_line(hidden: int) -> str:
+    return f"- and {hidden} more, listed in the doc entry"
+
+
+def support_lines(support: Sequence[SupportTheme], limit: int | None = None) -> list[str]:
+    if limit is None or len(support) <= limit:
+        return [f"- {t.line}" for t in support]
+    largest = sorted(support, key=lambda t: -t.count)[:limit]
+    return [f"- {t.line}" for t in largest] + [_more_line(len(support) - limit)]
+
+
+def compose_pulse(inp: PulseInput, out: _PulseOut, support_limit: int | None = None) -> str:
     lines = [
         f"Weekly Product Pulse: {inp.window_start:%d %b %Y} to {inp.window_end:%d %b %Y}",
         f"{inp.reviews_analysed} reviews in the window, {inp.reviews_themed} long enough to group"
@@ -527,7 +543,7 @@ def compose_pulse(inp: PulseInput, out: _PulseOut) -> str:
         lines.append(f"- {theme.label} ({theme.count} reviews): {' '.join(said.split())}")
     if inp.support_themes:
         lines += ["", "From the support queue (similar customer questions):"]
-        lines += [f"- {t.line}" for t in inp.support_themes]
+        lines += support_lines(inp.support_themes, support_limit)
     if inp.quotes:
         lines += ["", "What users said:"]
         lines += [f'- "{text}" ({label})' for text, label in inp.quotes]
@@ -546,30 +562,38 @@ def shorten_quote(text: str, limit: int) -> str:
 
 
 PULSE_QUOTE_LIMITS = (120, 80)
+PULSE_QUOTE_LIMIT_LAST = 50  # the shortest quotes, tried before naming only 3 clusters
 
 
 def fit_pulse(inp: PulseInput, out: _PulseOut) -> str:
     """The composed pulse, shortened by code when it is over the word cap. In order: the
-    model's summary goes to its first sentence, then is left out; then each quote is cut to
-    its opening words. Counts, themes, support-queue clusters, the fee lines and the action
-    ideas are never cut. If it is still too long, the length check fails it as before."""
+    model's summary goes to its first sentence, then is left out; each quote is cut to its
+    opening words, more and more; only then, past 3 surfaced support-queue clusters, are the 3
+    largest named and the rest counted. Counts, themes, the fee lines and the action ideas are
+    never cut. If it is still too long, the length check fails it as before."""
     text = compose_pulse(inp, out)
     if count_words(text) <= PULSE_MAX_WORDS:
         return text
     sentences = split_sentences(" ".join(out.summary.split()))
-    steps: list[tuple[str, int | None]] = [
-        (sentences[0] if sentences else "", None),
-        ("", None),
-        *(("", limit) for limit in PULSE_QUOTE_LIMITS),
+    first = sentences[0] if sentences else ""
+    # (summary, quote length limit, support-queue clusters named)
+    steps: list[tuple[str, int | None, int | None]] = [
+        (first, None, None),
+        ("", None, None),
+        *(("", limit, None) for limit in PULSE_QUOTE_LIMITS),
+        # Shorter quotes before fewer clusters: naming every surfaced cluster is how the
+        # support queue reaches the product team (the loop connection).
+        ("", PULSE_QUOTE_LIMIT_LAST, None),
+        ("", PULSE_QUOTE_LIMIT_LAST, SUPPORT_LINES_SHOWN),
     ]
-    for summary, limit in steps:
+    for summary, limit, shown in steps:
         quotes = (
             inp.quotes
             if limit is None
             else [(shorten_quote(q, limit), label) for q, label in inp.quotes]
         )
         text = compose_pulse(
-            replace(inp, quotes=quotes), out.model_copy(update={"summary": summary})
+            replace(inp, quotes=quotes), out.model_copy(update={"summary": summary}), shown
         )
         if count_words(text) <= PULSE_MAX_WORDS:
             break
@@ -608,11 +632,23 @@ async def write_pulse(llm: Completer, inp: PulseInput, feedback: str | None = No
 
 
 def support_themes_reported(text: str, support: Sequence[SupportTheme]) -> RuleResult:
-    """No surfaced support-queue cluster may be missing from the pulse (Phase 6)."""
-    missing = [t.label for t in support if t.line not in text]
-    if missing:
-        return RuleResult("support_queue_reported", False, f"missing from the pulse: {missing[0]}")
-    return RuleResult("support_queue_reported", True, f"{len(support)} surfaced clusters")
+    """No surfaced support-queue cluster may be missing from the pulse (Phase 6). Each one is
+    named with its count and window, or, when the pulse names only the largest few to stay
+    under the word cap, the rest are counted on the "and N more" line."""
+    missing = [t for t in support if t.line not in text]
+    if not missing:
+        return RuleResult("support_queue_reported", True, f"{len(support)} surfaced clusters")
+    shown = SUPPORT_LINES_SHOWN
+    largest = sorted(support, key=lambda t: -t.count)[:shown]
+    if (
+        len(support) > shown
+        and all(t.line in text for t in largest)
+        and _more_line(len(support) - shown) in text
+    ):
+        detail = f"{shown} of {len(support)} surfaced clusters named, the rest counted"
+        return RuleResult("support_queue_reported", True, detail)
+    detail = f"missing from the pulse: {missing[0].label}"
+    return RuleResult("support_queue_reported", False, detail)
 
 
 def check_pulse(

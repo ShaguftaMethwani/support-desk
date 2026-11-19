@@ -200,3 +200,44 @@ never write to Google. The API's log and the recorded tool calls are kept in `ev
 
 **Groq quota.** A fresh run makes roughly 250 model calls and 24 Whisper calls; with the cache,
 a re-run makes almost none. The free tier allows 1,000 requests per day per model.
+
+## Deployment
+
+The API runs on Render (free plan, Docker), the frontend on Vercel, and the database on a Neon
+branch. The browser only talks to the Vercel domain: `frontend/vercel.json` proxies `/api/*`
+to Render, so the login cookie is first-party and no CORS is needed. The weekly loop is started
+by GitHub Actions (`.github/workflows/weekly.yml`).
+
+1. **Database.** In the Neon console, create a branch named `production` from the main branch
+   and copy its connection string. Then, from `backend/`, empty everything except the corpus,
+   the reviews and the Groq cache, and create the logins:
+
+   ```bash
+   export DATABASE_URL='postgresql://...'      # the production branch, not the one in .env
+   uv run python -m scripts.prepare_production --dry-run
+   uv run python -m scripts.prepare_production --confirm ep-...   # the host's first part
+   uv run python -m scripts.create_user <your-name> --role admin
+   uv run python -m scripts.create_user grader                    # the graders' login
+   unset DATABASE_URL
+   ```
+
+2. **API.** In Render: New > Blueprint, pick this repository (`render.yaml`). Enter
+   `DATABASE_URL` (the production branch), `GROQ_API_KEY` and the four `GOOGLE_*` values.
+   `SESSION_SECRET` and `WEEKLY_TRIGGER_TOKEN` are generated. The first build takes about 10
+   minutes. The service URL should be `https://support-desk-api.onrender.com`; if Render gives
+   another, change the `/api` destination in `frontend/vercel.json` to match.
+
+3. **Frontend.** In Vercel: Add New > Project, import this repository, set the Root Directory
+   to `frontend`, and deploy. No environment variables are needed.
+
+4. **Weekly cron.** In GitHub: Settings > Secrets and variables > Actions, add `DESK_API_URL`
+   (the Render URL) and `WEEKLY_TRIGGER_TOKEN` (copied from the Render service's environment).
+   Run "Weekly pulse" once from the Actions tab to check it.
+
+5. **Check.** Open the Vercel URL, sign in, ask a question, and approve one doc entry and one
+   email draft: the entry should appear in the Google Doc and the draft in Gmail.
+
+**Free-tier behaviour.** The API sleeps after 15 idle minutes, and the first request after that
+takes about a minute. It has 512 MB of memory and 0.1 CPU, so a weekly run takes several
+minutes. Google refresh tokens for an OAuth app in testing mode expire after 7 days: refresh
+the token before the demo and grading, or publish the app.

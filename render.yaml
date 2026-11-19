@@ -1,0 +1,58 @@
+# Render Blueprint for the API (free plan). In the Render dashboard: New > Blueprint, pick this
+# repository. Values marked `sync: false` are asked for once, when the service is created.
+#
+# The frontend (Vercel) proxies /api/* to this service, so the browser only ever talks to the
+# Vercel domain: the session cookie is first-party and no cross-origin requests are needed.
+services:
+  - type: web
+    name: support-desk-api
+    runtime: docker
+    plan: free
+    # Ohio is US East, next to the Neon database (us-east-2): each query is a short hop.
+    region: ohio
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: .
+    # Liveness only: the full /health calls Groq, which frequent health checks shouldn't do.
+    healthCheckPath: /health/live
+    # Deploy after CI passes on main.
+    autoDeployTrigger: checksPass
+    buildFilter:
+      paths:
+        - backend/**
+        - mcp_server/**
+        - data/**
+        - render.yaml
+      ignoredPaths:
+        - backend/tests/**
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: LOG_JSON
+        value: "true"
+      - key: LOG_LEVEL
+        value: INFO
+      # Same-origin through the Vercel proxy, so no browser origin needs CORS.
+      - key: CORS_ORIGINS
+        value: "[]"
+      - key: SESSION_COOKIE_SAMESITE
+        value: lax
+      - key: SESSION_SECRET
+        generateValue: true
+      # Copy this value into the GitHub secret WEEKLY_TRIGGER_TOKEN after the first deploy.
+      - key: WEEKLY_TRIGGER_TOKEN
+        generateValue: true
+      # The production Neon branch (postgresql://...?sslmode=require works as copied).
+      - key: DATABASE_URL
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
+      # Google Docs and Gmail drafts through the MCP server. The refresh token must be for a
+      # client limited to the Docs and gmail.compose scopes.
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: GOOGLE_REFRESH_TOKEN
+        sync: false
+      - key: GOOGLE_DOC_ID
+        sync: false

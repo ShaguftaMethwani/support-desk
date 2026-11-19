@@ -105,6 +105,35 @@ def returns_guard(text: str) -> RuleResult:
     return RuleResult("returns_guard", True)
 
 
+# --- promised_action --------------------------------------------------------------------------
+# A reply may only state facts. The desk takes no action for the customer (no emails, calls,
+# refunds or fixes), so a draft must not promise one: "Sure, we will email you the factsheet."
+# Routing a question to the team is real and is said by the templates ("I've passed it to our
+# team"), so "passed" is not on the list.
+_APOS = "['\u2019]"
+_ACTION_VERBS = (
+    r"(?:e-?mail|mail|send|sent|call|ring|text|sms|whatsapp|refund|credit|reverse|cancel|"
+    r"process|resolve|fix|update|share|forward|arrange|transfer)\w*"
+)
+# First person only: "will be cancelled after three failed debits" is a documented rule, not a
+# promise, and documents state such rules all the time.
+_PROMISES = (
+    re.compile(
+        rf"\b(?:we|i)(?:{_APOS}ll|{_APOS}ve|\s+will|\s+shall|\s+have|\s+are\s+going\s+to|"
+        rf"\s+am\s+going\s+to)\s+(?:\w+\s+){{0,2}}?{_ACTION_VERBS}\b",
+        re.IGNORECASE,
+    ),
+)
+
+
+def promised_action(text: str) -> RuleResult:
+    for pattern in _PROMISES:
+        m = pattern.search(text)
+        if m:
+            return RuleResult("promised_action", False, f'"{_short(m.group(0))}"')
+    return RuleResult("promised_action", True)
+
+
 # --- citation_required ------------------------------------------------------------------------
 
 

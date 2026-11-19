@@ -60,3 +60,16 @@ jobs:
         run: npm run build
       - name: Unit tests
         run: npm test
+
+  image:
+    # The image Render deploys. Render waits for CI (autoDeployTrigger: checksPass), so a
+    # broken Dockerfile fails here instead of in a deploy.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build the API image
+        run: docker build -f backend/Dockerfile -t support-desk-api .
+      - name: The MCP server and the embedding model are in the image
+        run: |
+          docker run --rm support-desk-api sh -c \
+            'test -f /app/mcp_server/dist/index.js && node --version && ls .cache/fastembed | grep -q .'

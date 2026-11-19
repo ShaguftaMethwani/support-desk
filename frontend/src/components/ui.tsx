@@ -161,3 +161,25 @@ export function Section({ title, children, aside }: { title: string; children: R
     </section>
   );
 }
+
+const MODEL_TAGS: Record<string, { label: string; title: string }> = {
+  fallback_model: {
+    label: "fallback model",
+    title: "One model's daily quota ran out, so the other model drafted this",
+  },
+  fallback: {
+    label: "Facts wording",
+    title: "The model's wording failed the code checks, so the Facts Agent's answer was used",
+  },
+};
+
+/** What drafted a reply, when it wasn't the usual path. */
+export function ModelTagBadge({ tag }: { tag: string | null }) {
+  if (!tag) return null;
+  const t = MODEL_TAGS[tag] ?? { label: tag, title: tag };
+  return (
+    <Badge tone="violet" title={t.title}>
+      {t.label}
+    </Badge>
+  );
+}

@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { createContext, useContext, useEffect, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { api, ApiError, UNAUTHORIZED_EVENT } from "../api/client";
 import type { User } from "../api/types";
 import { Login } from "./Login";
@@ -44,7 +44,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [qc]);
 
   if (me.isPending) {
-    return <div className="grid h-screen place-items-center text-sm text-slate-500">Loading…</div>;
+    return <Starting />;
   }
   if (me.isError) {
     return (
@@ -69,4 +69,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     qc.setQueryData(["me"], null);
   };
   return <AuthContext.Provider value={{ user: me.data, signOut }}>{children}</AuthContext.Provider>;
+}
+
+/** The hosted API sleeps when idle (free tier) and takes about a minute to wake. */
+function Starting() {
+  const [slow, setSlow] = useState(false);
+  useEffect(() => {
+    const t = window.setTimeout(() => setSlow(true), 5000);
+    return () => window.clearTimeout(t);
+  }, []);
+  return (
+    <div className="grid h-screen place-items-center px-4 text-center text-sm text-slate-500">
+      <div>
+        <p>Loading…</p>
+        {slow && (
+          <p className="mt-2 max-w-sm">
+            The server is waking up. It sleeps when nobody has used it for a while, and starting
+            takes up to a minute.
+          </p>
+        )}
+      </div>
+    </div>
+  );
 }

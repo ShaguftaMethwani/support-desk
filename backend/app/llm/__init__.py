@@ -3,8 +3,11 @@ from app.llm.client import (
     LLMError,
     LLMNotConfiguredError,
     LLMOutputError,
+    LLMQuotaError,
     LLMResult,
     LLMUnavailableError,
+    fallback_models_used,
+    track_fallback,
 )
 
 __all__ = [
@@ -12,6 +15,9 @@ __all__ = [
     "LLMError",
     "LLMNotConfiguredError",
     "LLMOutputError",
+    "LLMQuotaError",
     "LLMResult",
     "LLMUnavailableError",
+    "fallback_models_used",
+    "track_fallback",
 ]

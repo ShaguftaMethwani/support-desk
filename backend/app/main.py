@@ -32,7 +32,17 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         if resume is not None and not resume.done():
             resume.cancel()
 
-    app = FastAPI(title="The Support Desk", version="0.1.0", lifespan=lifespan)
+    # The interactive API docs are for local work only: deployed, they would list every
+    # endpoint to anyone (each still needs a login, but there's no reason to publish them).
+    local = settings.app_env in ("local", "test")
+    app = FastAPI(
+        title="The Support Desk",
+        version="0.1.0",
+        lifespan=lifespan,
+        docs_url="/docs" if local else None,
+        redoc_url="/redoc" if local else None,
+        openapi_url="/openapi.json" if local else None,
+    )
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origins,

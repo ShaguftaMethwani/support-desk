@@ -47,7 +47,7 @@ from app.intent.classifier import Classification, classify
 from app.intent.rules import find_scheme
 from app.intent.session import SessionState
 from app.intent.splitter import Part, split_message
-from app.llm import LLMError
+from app.llm import LLMError, fallback_models_used, track_fallback
 from app.observability import get_logger
 from app.orchestrator.draft import (
     ADVICE_REFUSAL,
@@ -431,7 +431,13 @@ async def store_review(
             routing=draft.routing.model_dump(mode="json"),
             author=author,
             author_id=author_id,
-            model_tag="fallback" if draft.fallback_used else None,
+            # "fallback_model": a model ran out of daily quota and the other one answered.
+            # "fallback": the model's wording failed code checks; the Facts answer was used.
+            model_tag=(
+                "fallback_model"
+                if fallback_models_used()
+                else ("fallback" if draft.fallback_used else None)
+            ),
             review_status=reviewed.status if last else "rework",
         )
         s.add(row)
@@ -489,6 +495,13 @@ class ItemOutcome:
 
 
 async def process_item(
+    deps: DeskDeps, item_id: uuid.UUID, state: SessionState | None
+) -> ItemOutcome:
+    with track_fallback():  # a fallback model anywhere in this item tags its draft
+        return await _process_item(deps, item_id, state)
+
+
+async def _process_item(
     deps: DeskDeps, item_id: uuid.UUID, state: SessionState | None
 ) -> ItemOutcome:
     """Classify, run the agents, draft, review and store. No database session is held while
@@ -668,6 +681,13 @@ class RefineOutcome:
 
 
 async def refine_item(
+    deps: DeskDeps, item_id: uuid.UUID, feedback_raw: str, *, user_id: uuid.UUID
+) -> RefineOutcome:
+    with track_fallback():
+        return await _refine_item(deps, item_id, feedback_raw, user_id=user_id)
+
+
+async def _refine_item(
     deps: DeskDeps, item_id: uuid.UUID, feedback_raw: str, *, user_id: uuid.UUID
 ) -> RefineOutcome:
     feedback = guard(feedback_raw).text  # never stored or sent to a model unredacted

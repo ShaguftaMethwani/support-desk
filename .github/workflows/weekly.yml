@@ -1,0 +1,83 @@
+name: Weekly pulse
+
+# Every Monday at 03:30 UTC (09:00 IST), and on demand from the Actions tab.
+on:
+  schedule:
+    - cron: "30 3 * * 1"
+  workflow_dispatch:
+
+# Repository secrets:
+#   DESK_API_URL           the API's base URL, e.g. https://support-desk-api.onrender.com
+#   WEEKLY_TRIGGER_TOKEN   the same value as the API's WEEKLY_TRIGGER_TOKEN
+
+concurrency:
+  group: weekly-pulse
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    env:
+      API: ${{ secrets.DESK_API_URL }}
+      TOKEN: ${{ secrets.WEEKLY_TRIGGER_TOKEN }}
+    steps:
+      - name: Check the secrets are set
+        run: |
+          test -n "$API" || { echo "::error::DESK_API_URL secret is not set"; exit 1; }
+          test -n "$TOKEN" || { echo "::error::WEEKLY_TRIGGER_TOKEN secret is not set"; exit 1; }
+
+      # A free Render service sleeps after 15 idle minutes and takes about a minute to wake.
+      - name: Wake the API
+        run: |
+          for i in $(seq 1 30); do
+            if curl -fsS --max-time 30 "$API/health/live" > /dev/null; then
+              echo "API is up (attempt $i)"; break
+            fi
+            [ "$i" = 30 ] && { echo "::error::API did not wake up"; exit 1; }
+            sleep 10
+          done
+          health=$(curl -sS --max-time 30 "$API/health")
+          echo "$health"
+          echo "$health" | jq -e '.database.status == "ok"' > /dev/null \
+            || { echo "::error::the database is not reachable"; exit 1; }
+
+      - name: Start the run
+        id: start
+        run: |
+          code=$(curl -sS -o start.json -w '%{http_code}' --max-time 60 -X POST "$API/weekly/run" \
+            -H "Authorization: Bearer $TOKEN" -H 'content-type: application/json' \
+            -d '{"triggered_by": "cron"}')
+          cat start.json; echo
+          case "$code" in
+            202) echo "Started." ;;
+            409) echo "::warning::a run was already active; following it instead" ;;
+            *) echo "::error::POST /weekly/run returned $code"; exit 1 ;;
+          esac
+          echo "run_id=$(jq -r .run_id start.json)" >> "$GITHUB_OUTPUT"
+
+      # Polling every minute is also what keeps the free service awake until the run is done.
+      - name: Wait for the run to finish
+        env:
+          RUN_ID: ${{ steps.start.outputs.run_id }}
+        run: |
+          for i in $(seq 1 140); do
+            sleep 60
+            if ! curl -fsS --max-time 60 "$API/weekly/$RUN_ID" -H "Authorization: Bearer $TOKEN" -o run.json; then
+              echo "poll $i: no answer, retrying"; continue
+            fi
+            status=$(jq -r .status run.json)
+            done_stages=$(jq -r '[.stages | to_entries[] | select(.value == "done") | .key] | join(",")' run.json)
+            echo "poll $i: $status ($done_stages)"
+            case "$status" in
+              pending|in_progress) ;;
+              awaiting_approval)
+                echo "Done. Themes:"; jq -r '.themes[] | "- \(.label) (\(.count))"' run.json
+                echo "Pending actions:"; jq -r '.actions[] | "- \(.kind): \(.status)"' run.json
+                exit 0 ;;
+              *)
+                echo "::error::the run ended as $status: $(jq -r '.error // "no error given"' run.json)"
+                exit 1 ;;
+            esac
+          done
+          echo "::error::the run did not finish in time"; exit 1

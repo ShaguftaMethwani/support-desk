@@ -3,7 +3,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { Link } from "react-router";
 import { api } from "../api/client";
 import type { AgentRun, QueueItemDetail, RuleResult } from "../api/types";
-import { AnswerBadge, Badge, CitationChip, Drawer, ErrorNote, ItemStatusBadge, Loading, PatternBadge, Section } from "../components/ui";
+import { AnswerBadge, Badge, CitationChip, Drawer, ErrorNote, ItemStatusBadge, Loading, ModelTagBadge, PatternBadge, Section } from "../components/ui";
 import { answerStatus, fmtDate, fmtDateTime, humanize, replyBody, timingRounds } from "../lib/desk";
 
 const MAX_ROUNDS = 5;
@@ -80,7 +80,7 @@ function DrawerBody({ item }: { item: QueueItemDetail }) {
                   <Badge tone="accent">canonical explainer</Badge>
                 </Link>
               )}
-              {d.model_tag && <Badge tone="violet">model: {d.model_tag}</Badge>}
+              <ModelTagBadge tag={d.model_tag} />
               <Badge tone={d.review_status === "passed" ? "green" : "red"}>review {d.review_status}</Badge>
             </div>
           </div>
@@ -123,7 +123,7 @@ function DrawerBody({ item }: { item: QueueItemDetail }) {
                 <Badge tone={v.review_status === "passed" ? "green" : v.review_status === "rework" ? "amber" : "red"}>
                   {v.review_status}
                 </Badge>
-                {v.model_tag && <Badge tone="violet">{v.model_tag}</Badge>}
+                <ModelTagBadge tag={v.model_tag} />
               </div>
               <p className="mt-2 text-sm whitespace-pre-wrap text-slate-700">{replyBody(v.reply)}</p>
               {v.review && <Rules rules={v.review} />}

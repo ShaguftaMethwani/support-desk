@@ -49,10 +49,28 @@ def test_good_reply_passes(ctx: PolicyContext) -> None:
         "pii_guard",
         "advice_guard",
         "returns_guard",
+        "promised_action",
         "citation_required",
         "length_caps",
         "last_checked_present",
     }
+
+
+@pytest.mark.parametrize(
+    ("body", "promises"),
+    [
+        ("Sure, we will email you the HDFC Mid Cap Fund factsheet.", True),
+        ("We\u2019ll send the statement to your registered address.", True),
+        ("I have processed your redemption request.", True),
+        ("We are going to refund the stamp duty.", True),
+        # Documented rules and the routing templates are not promises.
+        ("The registration will be cancelled after three consecutive failed debits.", False),
+        ("I've passed your question to our team to answer.", False),
+        ("We\u2019re sorry to hear about the delay in your redemption.", False),
+    ],
+)
+def test_a_reply_cannot_promise_an_action(ctx: PolicyContext, body: str, promises: bool) -> None:
+    assert ("promised_action" in failed_rules(run_policy(reply(body), ctx))) is promises
 
 
 def test_reply_with_four_sentences_fails_length(ctx: PolicyContext) -> None:

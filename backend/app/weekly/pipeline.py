@@ -20,6 +20,7 @@ Validation runs inside the explainer and pulse stages: one regeneration with the
 failure, then the run is marked failed with the reason.
 """
 
+import asyncio
 import re
 import uuid
 from collections.abc import Awaitable, Callable
@@ -218,7 +219,8 @@ def _support_inputs(run: WeeklyRun) -> list[SupportTheme]:
 
 
 async def stage_ingest(s: AsyncSession, run: WeeklyRun, deps: WeeklyDeps) -> dict[str, Any]:
-    rows = load_csv(deps.reviews_csv)
+    # The guard (spaCy name detection) over ~1,000 reviews is CPU work: off the event loop.
+    rows = await asyncio.to_thread(load_csv, deps.reviews_csv)
     stats = await ingest_reviews(
         s, rows, deps.embedder,
         window_start=run.window_start, window_end=run.window_end,
@@ -235,7 +237,8 @@ async def stage_cluster(s: AsyncSession, run: WeeklyRun, deps: WeeklyDeps) -> di
         for r in reviews
         if r.embedding is not None and len(_WORD.findall(r.text_redacted)) >= min_words
     ]
-    result = cluster_embeddings(
+    result = await asyncio.to_thread(  # CPU work, off the event loop
+        cluster_embeddings,
         [list(r.embedding) for r in themed],  # type: ignore[arg-type]
         min_k=deps.settings.weekly_min_themes,
         max_k=deps.settings.weekly_max_themes,

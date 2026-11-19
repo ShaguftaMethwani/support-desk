@@ -16,6 +16,9 @@ Users are created with `uv run python -m scripts.create_user <username>`.
 """
 
 import secrets
+import time
+from collections import defaultdict, deque
+from collections.abc import Callable
 from functools import lru_cache
 from typing import Annotated, Any
 
@@ -101,6 +104,40 @@ def user_view(user: AppUser) -> dict[str, Any]:
     return {"id": str(user.id), "username": user.username, "role": user.role}
 
 
+class LoginLimiter:
+    """Failed sign-ins per username, in memory (one API instance). Keyed by username, not IP:
+    behind the frontend's proxy every request comes from the same few addresses."""
+
+    def __init__(self, clock: Callable[[], float] = time.monotonic) -> None:
+        self._clock = clock
+        self._failures: dict[str, deque[float]] = defaultdict(deque)
+
+    def _recent(self, username: str, window: float) -> deque[float]:
+        q = self._failures[username]
+        now = self._clock()
+        while q and now - q[0] > window:
+            q.popleft()
+        return q
+
+    def retry_after(self, username: str, max_failures: int, window: float) -> int | None:
+        """Seconds until another attempt is allowed, or None when it is allowed now."""
+        q = self._recent(username, window)
+        if len(q) < max_failures:
+            return None
+        return max(1, int(window - (self._clock() - q[0])))
+
+    def failed(self, username: str) -> None:
+        self._failures[username].append(self._clock())
+
+    def succeeded(self, username: str) -> None:
+        self._failures.pop(username, None)
+
+
+@lru_cache
+def get_login_limiter() -> LoginLimiter:
+    return LoginLimiter()
+
+
 class LoginRequest(BaseModel):
     username: str = Field(min_length=1, max_length=64)
     password: str = Field(min_length=1, max_length=256)
@@ -112,12 +149,25 @@ async def login(
     response: Response,
     session: Annotated[AsyncSession, Depends(get_session)],
     settings: Annotated[Settings, Depends(get_settings)],
+    limiter: Annotated[LoginLimiter, Depends(get_login_limiter)],
 ) -> dict[str, Any]:
     secret = session_secret(settings)
+    name = body.username.strip().lower()
+    window = settings.login_window_minutes * 60
+    wait = limiter.retry_after(name, settings.login_max_failures, window)
+    if wait is not None:
+        minutes = max(1, round(wait / 60))
+        raise HTTPException(
+            status.HTTP_429_TOO_MANY_REQUESTS,
+            f"too many failed sign-ins, try again in {minutes} minute{'s' if minutes > 1 else ''}",
+            headers={"Retry-After": str(wait)},
+        )
     user = await session.scalar(select(AppUser).where(AppUser.username == body.username))
     # verify_password runs scrypt even for an unknown user, so timing does not reveal names.
     if not verify_password(body.password, user.password_hash if user else None) or user is None:
+        limiter.failed(name)
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "wrong username or password")
+    limiter.succeeded(name)
     response.set_cookie(
         COOKIE,
         make_session_token(user.id, secret),

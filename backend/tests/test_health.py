@@ -52,3 +52,9 @@ def test_free_text_request_id_is_replaced(settings: Settings) -> None:
     r = client_with(settings, "ok", "ok").get("/health", headers={"x-request-id": bad})
     assert r.headers["x-request-id"] != bad
     assert len(r.headers["x-request-id"]) == 32
+
+
+def test_live_check_needs_neither_database_nor_groq(settings: Settings) -> None:
+    # Both checks would fail; the liveness endpoint never runs them.
+    r = client_with(settings, "error", "error").get("/health/live")
+    assert r.status_code == 200 and r.json() == {"status": "ok"}

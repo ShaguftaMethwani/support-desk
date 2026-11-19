@@ -124,3 +124,51 @@ def test_queue_doc_entry_names_the_canonical_explainer() -> None:
     assert "Canonical answer: explainer c-1" in queue_doc_text(payload)
     del payload["canonical_explainer_id"]
     assert not any("Canonical" in line for line in queue_doc_text(payload))
+
+
+MANY = [
+    SupportTheme(f"Questions about topic number {i} and its related details", n,
+                 date(2026, 11, 12), date(2026, 11, 18))
+    for i, n in enumerate([31, 5, 13, 9, 6, 7, 8, 5, 6, 5, 7, 5], start=1)
+]  # fmt: skip
+
+
+async def test_many_clusters_name_the_largest_and_count_the_rest() -> None:
+    llm = ScriptedLLM({"weekly_pulse": pulse_handler})
+    inp = dataclasses.replace(_pulse_input(), support_themes=MANY)
+    text = await write_pulse(llm, inp)
+    assert count_words(text) <= PULSE_MAX_WORDS, count_words(text)
+    largest = sorted(MANY, key=lambda t: -t.count)[:3]
+    assert all(f"- {t.line}" in text for t in largest)
+    assert "- and 9 more, listed in the doc entry" in text
+    results = check_pulse(text, PolicyContext(DOMAINS, TODAY), MANY)
+    assert all(r.passed for r in results), [r for r in results if not r.passed]
+
+
+def test_the_count_of_unnamed_clusters_must_be_right() -> None:
+    largest = sorted(MANY, key=lambda t: -t.count)[:3]
+    named = "\n".join(f"- {t.line}" for t in largest)
+    assert support_themes_reported(f"{named}\n- and 9 more, listed in the doc entry", MANY).passed
+    assert not support_themes_reported(
+        f"{named}\n- and 8 more, listed in the doc entry", MANY
+    ).passed
+    # Naming 3 small clusters instead of the 3 largest is not enough.
+    small = "\n".join(f"- {t.line}" for t in sorted(MANY, key=lambda t: t.count)[:3])
+    assert not support_themes_reported(
+        f"{small}\n- and 9 more, listed in the doc entry", MANY
+    ).passed
+
+
+async def test_quotes_are_shortened_before_any_cluster_is_hidden() -> None:
+    # Four clusters that fit only once the quotes are cut to 50 characters (at 80 they don't):
+    # every cluster is still named.
+    four = MANY[:4]
+    long_quote = "the app " + "keeps failing again and again whenever I try to invest " * 3
+    label = "Slow and crashing app on older Android phones every day"
+    inp = dataclasses.replace(
+        _pulse_input(), support_themes=four, quotes=[(long_quote.strip(), label)] * 3
+    )
+    text = await write_pulse(ScriptedLLM({"weekly_pulse": pulse_handler}), inp)
+    assert count_words(text) <= PULSE_MAX_WORDS
+    assert all(f"- {t.line}" in text for t in four)
+    assert "more, listed in the doc entry" not in text

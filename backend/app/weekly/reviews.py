@@ -13,6 +13,7 @@
    pointing at the reviews they were built from.
 """
 
+import asyncio
 import csv
 import re
 from dataclasses import dataclass
@@ -143,11 +144,13 @@ async def ingest_reviews(
         for r in in_window
     ]
     todo = [i for i, e in enumerate(embeddings) if e is None]
-    for i, vector in zip(todo, embedder.embed_documents([in_window[i].text for i in todo]),
-                         strict=True):  # fmt: skip
+    # Embedding and de-duplication are CPU work: in a thread, so the API keeps answering
+    # during a weekly run (on a 0.1-CPU host they take minutes).
+    fresh = await asyncio.to_thread(embedder.embed_documents, [in_window[i].text for i in todo])
+    for i, vector in zip(todo, fresh, strict=True):
         embeddings[i] = vector
     vectors: list[list[float]] = [e for e in embeddings if e is not None]
-    keep, exact, near = dedupe(in_window, vectors, dedupe_similarity)
+    keep, exact, near = await asyncio.to_thread(dedupe, in_window, vectors, dedupe_similarity)
     values = [
         {
             "review_id": in_window[i].review_id,

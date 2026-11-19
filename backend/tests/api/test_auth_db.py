@@ -13,7 +13,7 @@ from sqlalchemy import delete, text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import NullPool
 
-from app.api.auth import COOKIE
+from app.api.auth import COOKIE, LoginLimiter, get_login_limiter
 from app.config import Settings, get_settings
 from app.db.models import AppUser
 from app.db.session import get_session
@@ -75,8 +75,10 @@ def make_client(**overrides: Any) -> TestClient:
             await engine.dispose()
 
     app = create_app(settings)
+    limiter = LoginLimiter()  # each client starts with no failed sign-ins
     app.dependency_overrides[get_settings] = lambda: settings
     app.dependency_overrides[get_session] = session_override
+    app.dependency_overrides[get_login_limiter] = lambda: limiter
     # https: the cookie is Secure outside local, and httpx only sends it over https.
     return TestClient(app, base_url="https://testserver")
 
@@ -163,3 +165,23 @@ def test_sources_and_reviews() -> None:
     body = client.get("/reviews", params={"ids": ["no-such-review"]}).json()
     assert body == {"reviews": [], "missing": ["no-such-review"]}
     assert client.get("/reviews").status_code == 422
+
+
+def test_repeated_failed_sign_ins_are_refused_for_a_while(username: str) -> None:
+    client = make_client(login_max_failures=3)
+    for _ in range(3):
+        bad = client.post("/auth/login", json={"username": username, "password": "nope"})
+        assert bad.status_code == 401
+    locked = client.post("/auth/login", json={"username": username, "password": PASSWORD})
+    assert locked.status_code == 429 and "try again" in locked.json()["detail"]
+    assert int(locked.headers["retry-after"]) > 0
+    # Other usernames are not affected.
+    other = client.post("/auth/login", json={"username": "no-such-user", "password": "x"})
+    assert other.status_code == 401
+
+
+def test_api_docs_are_only_served_locally() -> None:
+    assert make_client().get("/docs").status_code == 200
+    deployed = make_client(app_env="production", session_secret="x" * 32)
+    for path in ("/docs", "/redoc", "/openapi.json"):
+        assert deployed.get(path).status_code == 404

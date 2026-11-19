@@ -85,6 +85,8 @@ class Settings(BaseSettings):
     # rapidfuzz ratio from which a misheard scheme name ("big cap") gets a suggestion.
     voice_scheme_min_score: float = 70.0
     llm_cache_enabled: bool = True
+    # When a model's daily quota is spent, use the other tier's model (and tag the draft).
+    llm_fallback_enabled: bool = True
 
     # Below this cosine similarity, the Facts Agent answers "not covered" without a model call.
     # Calibrated on the retrieval test set: answerable questions >= 0.72, off-topic <= 0.60.
@@ -107,6 +109,9 @@ class Settings(BaseSettings):
     # "none" when the frontend is on another site than the API (Vercel and Render). The
     # cookie is then sent cross-site, so it must be Secure (set outside local and test).
     session_cookie_samesite: str = "lax"
+    # Failed sign-ins per username within the window before login is refused for a while.
+    login_max_failures: int = 5
+    login_window_minutes: int = 15
 
     # Response loop (architecture section 7).
     intent_min_confidence: float = 0.6  # below this the intent becomes "unclear"

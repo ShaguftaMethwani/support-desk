@@ -211,3 +211,109 @@ async def test_logs_never_contain_prompt_or_response_text(
     dumped = repr(logs)
     assert "exit load" not in dumped.lower()
     assert "HDFC" not in dumped
+
+
+# --- fallback model ---------------------------------------------------------------------------
+
+
+def quota_error(retry_after: str | None = "3600", message: str = "rate limited") -> Any:
+    import httpx
+    import openai
+
+    headers = {"retry-after": retry_after} if retry_after is not None else {}
+    response = httpx.Response(
+        429, headers=headers, request=httpx.Request("POST", "https://api.groq.test/chat")
+    )
+    return openai.RateLimitError(message, response=response, body=None)
+
+
+async def test_a_spent_daily_quota_falls_back_to_the_other_model(
+    settings: Settings, fake_openai: FakeFactory, clock: FakeClock
+) -> None:
+    from app.llm import track_fallback
+
+    fake = fake_openai([quota_error("3600"), completion("from small"), completion("again")])
+    client = make_client(settings, fake, clock)
+    with track_fallback() as used, capture_logs() as logs:
+        first = await client.complete("facts", MSGS)
+    assert [c["model"] for c in fake.calls] == ["openai/gpt-oss-120b", "openai/gpt-oss-20b"]
+    assert first.text == "from small" and first.fallback and first.model == "openai/gpt-oss-20b"
+    assert used == ["openai/gpt-oss-20b"]
+    assert clock.sleeps == []  # no retries against a spent quota
+    assert any(e["event"] == "llm_quota_exhausted" for e in logs)
+    # Until the quota resets, the spent model is skipped without a call.
+    second = await client.complete("orchestrate", MSGS)
+    assert fake.calls[-1]["model"] == "openai/gpt-oss-20b" and second.fallback
+    clock.now += 3601
+    fake.script.append(completion("large is back"))
+    third = await client.complete("orchestrate", MSGS)
+    assert fake.calls[-1]["model"] == "openai/gpt-oss-120b" and not third.fallback
+
+
+async def test_a_per_day_message_counts_as_a_spent_quota(
+    settings: Settings, fake_openai: FakeFactory, clock: FakeClock
+) -> None:
+    error = quota_error(None, "Rate limit reached on requests per day (RPD): Limit 1000")
+    fake = fake_openai([error, completion("ok")])
+    result = await make_client(settings, fake, clock).complete("intent", MSGS)
+    assert [c["model"] for c in fake.calls] == ["openai/gpt-oss-20b", "openai/gpt-oss-120b"]
+    assert result.fallback
+
+
+async def test_a_per_minute_limit_is_retried_on_the_same_model(
+    settings: Settings, fake_openai: FakeFactory, clock: FakeClock
+) -> None:
+    fake = fake_openai([rate_limit_error("2"), completion("ok")])
+    result = await make_client(settings, fake, clock).complete("facts", MSGS)
+    assert [c["model"] for c in fake.calls] == ["openai/gpt-oss-120b"] * 2
+    assert not result.fallback and clock.sleeps == [2.0]
+
+
+async def test_both_quotas_spent_is_unavailable(
+    settings: Settings, fake_openai: FakeFactory, clock: FakeClock
+) -> None:
+    fake = fake_openai([quota_error(), quota_error()])
+    with pytest.raises(LLMUnavailableError):
+        await make_client(settings, fake, clock).complete("facts", MSGS)
+
+
+async def test_fallback_can_be_turned_off(
+    settings: Settings, fake_openai: FakeFactory, clock: FakeClock
+) -> None:
+    from app.llm import LLMQuotaError
+
+    off = settings.model_copy(update={"llm_fallback_enabled": False})
+    fake = fake_openai([quota_error()])
+    with pytest.raises(LLMQuotaError):
+        await make_client(off, fake, clock).complete("facts", MSGS)
+    assert len(fake.calls) == 1
+
+
+async def test_fallbacks_in_parallel_tasks_reach_the_parent(
+    settings: Settings, fake_openai: FakeFactory, clock: FakeClock
+) -> None:
+    import asyncio
+
+    from app.llm import fallback_models_used, track_fallback
+
+    fake = fake_openai([quota_error(), completion("a"), completion("b")])
+    client = make_client(settings, fake, clock)
+    with track_fallback():
+        await asyncio.gather(client.complete("facts", MSGS), client.complete("intent", MSGS))
+        assert fallback_models_used() == ["openai/gpt-oss-20b"]
+    assert fallback_models_used() == []  # outside the block nothing is tracked
+
+
+@pytest.mark.parametrize("status", [400, 401, 403, 404])
+async def test_other_groq_errors_fail_closed_without_retries(
+    settings: Settings, fake_openai: FakeFactory, clock: FakeClock, status: int
+) -> None:
+    import httpx
+    import openai
+
+    response = httpx.Response(status, request=httpx.Request("POST", "https://api.groq.test/x"))
+    error = openai.APIStatusError("refused", response=response, body=None)
+    fake = fake_openai([error])
+    with pytest.raises(LLMUnavailableError):
+        await make_client(settings, fake, clock).complete("facts", MSGS)
+    assert len(fake.calls) == 1 and clock.sleeps == []

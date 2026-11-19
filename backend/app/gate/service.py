@@ -13,6 +13,7 @@ Approving one action never touches another: the doc append, the email draft and
 promote_canonical each need their own approval.
 """
 
+import asyncio
 import uuid
 from collections.abc import Callable
 from datetime import UTC, datetime
@@ -80,10 +81,11 @@ async def promote_canonical(
         .values(active=False, archived_at=now)
     )
     text = "\n".join(explainer.bullets)
+    [embedding] = await asyncio.to_thread(embedder.embed_documents, [text])
     canonical = CanonicalExplainer(
         fee_type=explainer.fee_type,
         explainer_id=explainer.id,
-        embedding=embedder.embed_documents([text])[0],
+        embedding=embedding,
         approved_by=approver_id,
         active=True,
         bullet_chunk_ids=chunk_ids,

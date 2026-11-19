@@ -17,6 +17,7 @@ from app.policy.validators import (
     last_checked_present,
     length_caps,
     pii_guard,
+    promised_action,
     returns_guard,
     theme_provenance,
 )
@@ -28,6 +29,7 @@ def run_policy(artifact: Artifact, ctx: PolicyContext) -> list[RuleResult]:
             pii_guard(artifact.text),
             advice_guard(artifact.text, Scope.REPLY),
             returns_guard(artifact.text),
+            promised_action(artifact.text),
             citation_required(artifact, ctx),
             length_caps(artifact),
             last_checked_present(artifact, ctx),

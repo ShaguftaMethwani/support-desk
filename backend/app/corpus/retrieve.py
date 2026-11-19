@@ -17,6 +17,7 @@ Filters:
 Every search returns a SearchTrace, so a "not covered" answer can say what was searched.
 """
 
+import asyncio
 from collections.abc import Sequence
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -131,9 +132,10 @@ class Retriever:
     ) -> tuple[list[RetrievedChunk], SearchTrace]:
         """`doc_types`, when given, limits the search to those document types (for example
         the fee documents for the weekly fee explainer)."""
+        qvec = await asyncio.to_thread(self._embedder.embed_query, query)  # off the event loop
         params = {
             "q": query,
-            "qvec": _vector_literal(self._embedder.embed_query(query)),
+            "qvec": _vector_literal(qvec),
             "scheme": scheme,
             "general": GENERAL,
             "include_platform": include_platform,
