@@ -4,10 +4,13 @@ A facts-only support desk and product feedback loop for INDMoney, answering ques
 HDFC Mutual Fund schemes from official documents. Built as a graduation project for
 [this brief](docs/problemstatement.md).
 
+[![Demo video: 2 min 54 s on the live app, narrated. Click to watch.](docs/screenshots/demo-video.png)](docs/demo.mp4)
+
 - **Live app:** <https://support-desk-ten-phi.vercel.app/>. The demo login is given with the
   submission. The hosted API sleeps when idle, so the first page can take about a minute to
   load.
-- **Demo video:** [docs/demo.mp4](docs/demo.mp4) (2 min 54 s), recorded on the live app, with spoken narration.
+- **Demo video:** [docs/demo.mp4](docs/demo.mp4) (2 min 54 s), recorded on the live app, with
+  spoken narration. Click the picture above to watch it.
 - **Design:** [docs/architecture.md](docs/architecture.md). **Build log:**
   [docs/implementation.md](docs/implementation.md), with a status section per phase recording
   what was built, what was measured and what was changed as a result.
