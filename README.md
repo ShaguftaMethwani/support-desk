@@ -14,7 +14,9 @@ HDFC Mutual Fund schemes from official documents. Built as a graduation project 
 - **Design:** [docs/architecture.md](docs/architecture.md). **Build log:**
   [docs/implementation.md](docs/implementation.md), with a status section per phase recording
   what was built, what was measured and what was changed as a result.
-- **Evaluation results:** [evals/results/](evals/results/). **Samples:** [samples/](samples/).
+- **Evaluations:** [evals/EVALS.md](evals/EVALS.md): the golden dataset, the adversarial tests and
+  their scores, item by item. Raw reports: [evals/results/](evals/results/). **Samples:**
+  [samples/](samples/).
 
 ## What it does
 
@@ -208,7 +210,8 @@ expense ratio, stamp duty, STT) from platform charges. See
 ## Evaluations
 
 Six suites (171 cases) run against the whole system through its HTTP API, using a separate eval
-database (architecture section 15):
+database (architecture section 15). **[evals/EVALS.md](evals/EVALS.md) lists every golden and
+adversarial test item with its result in the final run.**
 
 | Suite | Checks |
 |---|---|
@@ -468,6 +471,6 @@ docs/             brief, architecture, implementation log, demo scripts
 | 5 sample questions with their drafts | [samples/questions.md](samples/questions.md): one spoken multi-part message, a refusal, a not-covered question and a canonical explainer reuse |
 | The appended doc entry | [samples/doc_entries.md](samples/doc_entries.md): exactly what `google_docs_append` received |
 | The email draft | [samples/email_drafts.md](samples/email_drafts.md): exactly what `gmail_create_draft` received |
-| Evaluation results | [evals/results/](evals/results/): before, after and final reports |
+| Evaluation results | [evals/results/](evals/results/): before, after and final reports; [evals/EVALS.md](evals/EVALS.md): the golden dataset and adversarial tests, item by item, with their scores |
 | Demo video | [docs/demo.mp4](docs/demo.mp4): 2 min 54 s on the live app, narrated; the script is [docs/demo_video.md](docs/demo_video.md) |
 | Screenshots | [docs/screenshots/](docs/screenshots/): chat, queue, weekly pulse, approvals, explainers, sources |
