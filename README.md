@@ -5,8 +5,9 @@ HDFC Mutual Fund schemes from official documents. Built as a graduation project 
 [this brief](docs/problemstatement.md).
 
 - **Live app:** <https://support-desk-ten-phi.vercel.app/>. The demo login is given with the
-  submission. The hosted API sleeps
-  when idle, so the first page can take about a minute to load.
+  submission. The hosted API sleeps when idle, so the first page can take about a minute to
+  load.
+- **Demo video:** [docs/demo.mp4](docs/demo.mp4) (2 min 54 s), recorded on the live app, with spoken narration.
 - **Design:** [docs/architecture.md](docs/architecture.md). **Build log:**
   [docs/implementation.md](docs/implementation.md), with a status section per phase recording
   what was built, what was measured and what was changed as a result.
@@ -42,6 +43,14 @@ Two loops share one database, one safety layer and one approval gate.
 
 The interface has six views behind a login: chat (typed and spoken), queue, approvals, weekly
 pulse, canonical explainers, and sources.
+
+| Chat: one message, two questions | Queue: the three agents and the reviewer |
+|---|---|
+| ![A two-part question: the fact answered with its source, the advice part refused](docs/screenshots/chat.png) | ![A queue item's agent timing, agent outputs and reviewer rules](docs/screenshots/queue-drawer.png) |
+| **Weekly pulse: themes with counts and windows** | **Approvals: one card per write, with its payload** |
+| ![A weekly run's themes, each with its count and window](docs/screenshots/weekly.png) | ![Pending approvals for the doc entry, the email draft and the explainer promotion](docs/screenshots/approvals.png) |
+
+More in [docs/screenshots/](docs/screenshots/), all taken from the live app.
 
 ## Architecture
 
@@ -457,4 +466,5 @@ docs/             brief, architecture, implementation log, demo scripts
 | The appended doc entry | [samples/doc_entries.md](samples/doc_entries.md): exactly what `google_docs_append` received |
 | The email draft | [samples/email_drafts.md](samples/email_drafts.md): exactly what `gmail_create_draft` received |
 | Evaluation results | [evals/results/](evals/results/): before, after and final reports |
-| Demo video script | [docs/demo_video.md](docs/demo_video.md) |
+| Demo video | [docs/demo.mp4](docs/demo.mp4): 2 min 54 s on the live app, narrated; the script is [docs/demo_video.md](docs/demo_video.md) |
+| Screenshots | [docs/screenshots/](docs/screenshots/): chat, queue, weekly pulse, approvals, explainers, sources |

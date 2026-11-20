@@ -168,7 +168,9 @@ class Settings(BaseSettings):
     # By default `node dist/index.js` in mcp_server_dir; set the command to override.
     mcp_server_command: str | None = None
     mcp_server_dir: Path = REPO_ROOT / "mcp_server"
-    mcp_timeout_seconds: float = 30.0
+    # Starting Node and reaching Google takes 12-14 s at Render's 0.1 CPU, and more than 30 s
+    # while a weekly run is using that CPU. Vercel's proxy waits 120 s for the whole request.
+    mcp_timeout_seconds: float = 75.0
 
     @field_validator("reasoning_effort", mode="before")
     @classmethod

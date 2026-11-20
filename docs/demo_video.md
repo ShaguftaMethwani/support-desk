@@ -39,6 +39,24 @@ Record the hosted app, or the local one if it isn't hosted yet.
 | 2:35–2:55 | Terminal: run the edit-correctness suite. Show the 7 passing cases, then the report in `evals/results/`. | "The evals run on the whole system. This suite snapshots every table before and after each decision; only the expected rows change. Six suites, 171 cases: zero PII leaks and zero unrefused advice questions." |
 | 2:55–3:00 | The README | "The repo has the architecture, the evals and the known limits." |
 
+## The recorded video
+
+[docs/demo.mp4](demo.mp4) (2 min 54 s) follows this script on the live app, recorded with an
+automated browser (Playwright driving Chrome). It differs in a few ways:
+- **Captions, read aloud.** Each caption is spoken by a synthesised voice (macOS `say`, the
+  Tara voice) as it appears. Where the speech runs longer than the caption was on screen, the
+  last frame of that part is held until the voice finishes.
+- **Waits for the live API are sped up**, 8 times, while a "sped up" tag is on screen.
+  Everything else plays in real time.
+- **The voice question is synthesised speech** (macOS `say`) fed in as the microphone. It goes
+  through the real recorder, the upload and Whisper.
+- **The Google Doc and Gmail aren't shown.** The browser isn't signed in to Google; each
+  approval shows its card leaving the queue.
+- **The eval is a recorded local run**, replayed at its real speed, with its wait before the
+  first result sped up.
+- **Run now comes last.** A run in progress slows the 0.1 CPU server, so approvals are shown
+  first.
+
 ## Notes
 
 - **If the Google tokens have expired**, the approved action shows "failed" and can be retried.
