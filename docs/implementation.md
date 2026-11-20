@@ -654,12 +654,7 @@ Everything that can be done in the repository is done and tested locally. Hostin
   - The trigger token is required.
   - CORS allows no origins.
   - The frontend sends a strict Content Security Policy and other security headers. `vite preview` serves the same headers, and all six views were driven in headless Chrome against the production-mode container with no CSP violations.
-- **Still to do on the hosted app (needs your accounts):**
-  - Deploy.
-  - Run the weekly workflow once from the Actions tab.
-  - Approve one doc entry and one email draft and check them in Google.
-  - Watch Render's memory graph during a run.
-  - Create the graders' login.
+- **On the hosted app (done in Phase 11):** deployed; the weekly workflow run from the Actions tab; doc entries and email drafts approved and written to Google; the graders' login created. Memory was checked by reproducing Render's limits locally after a crash on Render, rather than from Render's graph (see Phase 11).
 
 ### Exit check
 - The hosted app runs the full demo script.
@@ -732,7 +727,7 @@ Everything that can be done in the repository is done and tested locally. Hostin
     - The floor for factual questions is now 0.60, so look-alikes no longer get the explainer.
 
   After the fixes, the fresh copy's eval subset passed 14 of 14. The final full run passed 169 of 171 (intent 40 of 40, 15 of 15 claims). The CI steps, run in a copy without `.env`: 599 passed, 1 skipped.
-- **Deployed (19 November 2026).** a new Neon branch, separate from the dev database, cleaned with `prepare_production` (corpus, reviews and Groq cache kept), an admin login and a `grader` login, Render and Vercel live. The first weekly run from GitHub Actions finished in about 9 minutes with 4 themes and 3 pending actions.
+- **Deployed (19 November 2026).** A new Neon branch, separate from the dev database, cleaned with `prepare_production` (corpus, reviews and Groq cache kept), an admin login and a `grader` login, Render and Vercel live. The first weekly run from GitHub Actions finished in about 9 minutes with 4 themes and 3 pending actions.
 - **Crash on Render when approving after a weekly run.** The doc entry and email draft were written; the API restarted while the explainer was being promoted (that approval was rolled back, and succeeded when repeated). Reproduced under `--memory 512m --cpus 0.1`, with fake Google credentials:
   - After a weekly run the process holds 352 MB that isn't returned to the system.
   - **The embedding model was loaded twice.** The weekly runner built its own dependencies, so the first approval or question after a run loaded a second copy: +80 MB that stays. The runner now reuses the desk's model and Groq client (one rate limiter for the one key).
@@ -740,10 +735,11 @@ Everything that can be done in the repository is done and tested locally. Hostin
   - After both fixes: weekly run, then all three approvals in a row, peaked at 392 MB with no kill.
 - **Runs never left "awaiting approval".** `completed` existed as a status, but no code set it, so a run whose actions were all approved or rejected still showed as waiting on the Weekly page. The gate now completes the run when its last open action is executed or rejected, in the same transaction. A failed action keeps the run open, because it can be retried. The run row is locked first: without that, two last approvals at once each counted the other's action as open and left the run waiting (a test holds both approvals at the count; it fails 5 of 5 without the lock). Migration 0004 completes the runs already decided: two on production.
 - **An approval timed out during a weekly run.** Recording the demo, the doc entry was approved while a run started a minute earlier was using Render's 0.1 CPU; starting the MCP server and reaching Google took over 30 s, so the call timed out (the dedupe key made the retry safe). The MCP timeout is now 75 s: a call takes 12–14 s at 0.1 CPU when nothing else runs, and Vercel's proxy waits 120 s for the whole request.
-- **Still to do:**
-  - giving the graders the login with the submission;
-  - recording the video;
-  - optionally, a screenshot of the Gmail draft (the text is already in `samples/`).
+- **Demo video and screenshots.** [docs/demo.mp4](demo.mp4) (2 min 54 s, narrated) and [docs/screenshots/](screenshots/), recorded on the live app; [docs/demo_video.md](demo_video.md) lists how the video was made. The Gmail draft is given as text in `samples/`, as the brief allows.
+- **Still to do (outside the repo):**
+  - give the graders access to the repository (it is private);
+  - send the `grader` login with the submission;
+  - refresh the Google token close to grading: while the OAuth app is in Testing mode, the refresh token expires 7 days after authorisation (`npm run auth` in `mcp_server/`, then `GOOGLE_REFRESH_TOKEN` on Render).
 
 ### Exit check
 - A fresh clone, following only the README, can run locally and run the evals.
